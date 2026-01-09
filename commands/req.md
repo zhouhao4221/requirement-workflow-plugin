@@ -117,9 +117,9 @@ ls $REQ_PATH
 
 ```
 💡 可用命令：
-- /req new <标题> - 创建新需求
-- /req dev REQ-001 - 进入开发
-- /req status REQ-001 - 查看详情
+- /req:new <标题> - 创建新需求
+- /req:dev REQ-001 - 进入开发
+- /req:status REQ-001 - 查看详情
 ```
 
 ---
