@@ -1,0 +1,238 @@
+---
+description: 快速修复 - 创建小bug修复或小功能的快速需求
+---
+
+# 快速修复需求
+
+用于小bug修复或小功能开发，简化流程：方案确认即可开发。
+
+## 命令格式
+
+```
+/req new-quick [标题]
+```
+
+---
+
+## 简化生命周期
+
+```
+📝 草稿 → ✅ 方案确认 → 🔨 开发中 → 🎉 已完成
+```
+
+（跳过：评审、测试阶段）
+
+---
+
+## 执行流程
+
+### 0. 解析存储路径
+
+```bash
+# 本地存储路径（主存储）
+LOCAL_ROOT=docs/requirements
+LOCAL_ACTIVE=$LOCAL_ROOT/active
+LOCAL_COMPLETED=$LOCAL_ROOT/completed
+
+# 检查当前仓库绑定的项目（用于缓存同步）
+PROJECT=$(cat .claude/settings.local.json 2>/dev/null | jq -r '.requirementProject // empty')
+
+if [ -n "$PROJECT" ]; then
+    CACHE_ROOT=~/.claude-requirements/projects/$PROJECT
+    CACHE_ACTIVE=$CACHE_ROOT/active
+    CACHE_COMPLETED=$CACHE_ROOT/completed
+fi
+
+# 确保本地目录存在
+mkdir -p $LOCAL_ACTIVE $LOCAL_COMPLETED
+```
+
+### 1. 生成需求编号
+
+格式：`QUICK-XXX`（三位数字，如 QUICK-001）
+
+扫描本地和缓存中的快速需求文档，生成下一个编号：
+
+```bash
+# 从本地和缓存获取最大编号
+LOCAL_MAX=$(ls $LOCAL_ACTIVE/ $LOCAL_COMPLETED/ 2>/dev/null | grep -oE 'QUICK-[0-9]+' | sort -t'-' -k2 -n | tail -1)
+CACHE_MAX=$(ls $CACHE_ACTIVE/ $CACHE_COMPLETED/ 2>/dev/null | grep -oE 'QUICK-[0-9]+' | sort -t'-' -k2 -n | tail -1)
+
+# 取两者中较大的编号
+MAX_NUM=$(echo -e "$LOCAL_MAX\n$CACHE_MAX" | sort -t'-' -k2 -n | tail -1)
+```
+
+### 2. 收集基本信息
+
+如果未提供标题，询问用户：
+
+**需要收集的信息：**
+- 问题/需求描述（必填）
+- 类型：bug修复 / 小功能 / 优化（默认：bug修复）
+- 优先级（P1/P2/P3，默认 P2）
+
+### 3. 创建简化文档
+
+**步骤 3.1：写入本地存储**
+
+使用快速需求模板创建文件：`$LOCAL_ACTIVE/QUICK-XXX-标题.md`
+
+**初始化内容：**
+- 填充元信息（编号、标题、类型、状态=草稿、日期）
+- 生命周期勾选「草稿」
+
+**步骤 3.2：同步到全局缓存**
+
+```bash
+if [ -n "$PROJECT" ]; then
+    mkdir -p $CACHE_ACTIVE
+    cp $LOCAL_ACTIVE/QUICK-XXX-标题.md $CACHE_ACTIVE/
+fi
+```
+
+### 4. 快速分析并生成方案
+
+AI 分析问题/需求，生成实现方案：
+
+#### 4.1 问题分析（如果是bug）
+- 分析错误信息/现象
+- 定位问题根因
+- 确定影响范围
+
+#### 4.2 代码定位
+- 搜索相关代码
+- 确定涉及的文件
+- 理解现有实现
+
+#### 4.3 生成实现方案
+- 具体的改动说明
+- 涉及文件清单
+- 预估改动量（小/中）
+
+### 5. 方案确认
+
+显示方案摘要，等待用户确认：
+
+```
+📋 快速需求：QUICK-001 修复xxx问题
+
+📌 类型：bug修复
+📊 优先级：P2
+
+🔍 问题分析：
+  [问题根因分析]
+
+💡 实现方案：
+  [具体实现方案]
+
+📁 涉及文件：
+  - internal/xxx/biz/xxx.go（修改）
+  - internal/xxx/store/xxx.go（修改）
+
+📏 改动量：小（约 20 行）
+
+确认此方案开始开发？(y/n)
+```
+
+### 6. 方案确认检查
+
+在确认前检查：
+- [ ] 改动范围可控（建议 <5 个文件）
+- [ ] 不涉及数据库结构变更
+- [ ] 不影响其他核心功能
+- [ ] 可快速验证
+
+**如果任一不满足**，建议用户升级为正式需求：
+
+```
+⚠️ 此改动可能超出快速修复范围：
+- 涉及 8 个文件
+- 需要修改数据库表结构
+
+建议使用正式需求流程：/req new [标题]
+
+是否继续使用快速流程？(y/n)
+```
+
+### 7. 确认后进入开发
+
+用户确认后：
+
+1. 更新状态为「方案确认」→「开发中」
+2. 更新需求文档（先本地，后缓存）
+3. 使用 TodoWrite 生成开发任务
+4. 按照 dev-guide 技能引导开发
+
+```
+✅ 方案已确认，开始开发
+
+📋 开发任务：
+1. [ ] 修改 internal/xxx/biz/xxx.go
+2. [ ] 修改 internal/xxx/store/xxx.go
+3. [ ] 自测验证
+
+开始执行第一个任务...
+```
+
+### 8. 开发完成
+
+完成所有改动后：
+
+1. 更新状态为「已完成」
+2. 移动文档到 completed 目录
+3. 同步缓存
+
+```
+🎉 快速修复完成！
+
+📋 QUICK-001 修复xxx问题
+📊 状态：已完成
+📁 改动文件：2 个
+⏱️ 耗时：约 15 分钟
+
+📁 文档归档：docs/requirements/completed/QUICK-001-修复xxx问题.md
+
+💡 下一步（可选）：
+- 代码审查：/code-reviewer
+- 提交代码：git add . && git commit
+```
+
+---
+
+## 适用场景
+
+### 适合快速修复的情况
+
+- 简单的 bug 修复（逻辑错误、空指针等）
+- 小功能增强（新增字段、调整参数等）
+- 代码优化（性能优化、代码整理等）
+- UI 微调（文案修改、样式调整等）
+
+### 不适合快速修复的情况
+
+建议使用 `/req new` 创建正式需求：
+
+- 涉及数据库表结构变更
+- 涉及多个模块的联动修改
+- 需要新增 API 接口
+- 影响核心业务流程
+- 需要多人协作或评审
+
+---
+
+## 与正式需求的区别
+
+| 对比项 | 快速修复 (QUICK) | 正式需求 (REQ) |
+|-------|-----------------|---------------|
+| 编号格式 | QUICK-XXX | REQ-XXX |
+| 生命周期 | 4 阶段 | 6 阶段 |
+| 评审环节 | 无 | 有 |
+| 测试环节 | 自测 | 完整测试 |
+| 文档详细度 | 简化 | 完整 |
+| 适用场景 | 小改动 | 中大型需求 |
+
+---
+
+## 用户输入
+
+$ARGUMENTS
