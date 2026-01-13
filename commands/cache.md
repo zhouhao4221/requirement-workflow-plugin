@@ -208,7 +208,7 @@ rm -rf ~/.claude-requirements
 
 1. 读取当前仓库绑定的项目名
 2. 清空该项目的缓存目录
-3. 从本地 `docs/requirements/` 复制到缓存
+3. 从本地 `docs/requirements/` 完整复制到缓存
 
 ```bash
 # 获取当前项目
@@ -222,10 +222,11 @@ fi
 CACHE_PATH=~/.claude-requirements/projects/$PROJECT
 LOCAL_PATH=docs/requirements
 
-# 清空并重建
-rm -rf $CACHE_PATH/active/* $CACHE_PATH/completed/*
-cp -r $LOCAL_PATH/active/* $CACHE_PATH/active/
-cp -r $LOCAL_PATH/completed/* $CACHE_PATH/completed/
+# 清空缓存目录
+rm -rf $CACHE_PATH/*
+
+# 完整复制本地需求（包括 modules/、active/、completed/、INDEX.md）
+cp -r $LOCAL_PATH/* $CACHE_PATH/
 ```
 
 ### 输出
@@ -237,8 +238,10 @@ cp -r $LOCAL_PATH/completed/* $CACHE_PATH/completed/
 📂 目标: ~/.claude-requirements/projects/my-saas-product/
 
 同步内容:
+├── modules/: 3 个文件
 ├── active/: 5 个文件
-└── completed/: 12 个文件
+├── completed/: 12 个文件
+└── INDEX.md
 
 ✅ 缓存重建完成
 ```
