@@ -5,16 +5,10 @@
 
 FILE_PATH="$1"
 
-# 检查参数
-if [ -z "$FILE_PATH" ]; then
+# 非需求文档直接跳过
+if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
     exit 0
 fi
-
-if [ ! -f "$FILE_PATH" ]; then
-    exit 0
-fi
-
-# 检查是否是需求文档（docs/requirements 目录下的 .md 文件）
 if [[ ! "$FILE_PATH" =~ docs/requirements/.+\.md$ ]]; then
     exit 0
 fi
@@ -92,7 +86,8 @@ TARGET_FILE="$TARGET_DIR/$FILENAME"
 cp "$FILE_PATH" "$TARGET_FILE"
 
 if [ $? -eq 0 ]; then
-    echo "🔄 已同步到缓存: $PROJECT_NAME"
+    echo "已同步到缓存: $PROJECT_NAME"
 else
-    echo "⚠️ 缓存同步失败: $TARGET_FILE"
+    echo "缓存同步失败: $TARGET_FILE" >&2
+    exit 1
 fi
