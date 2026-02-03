@@ -54,6 +54,12 @@ if [ -z "$PROJECT_NAME" ]; then
     exit 0
 fi
 
+# 只读仓库不执行缓存同步
+ROLE=$(grep -o '"requirementRole"[[:space:]]*:[[:space:]]*"[^"]*"' "$SETTINGS_FILE" | sed 's/.*"requirementRole"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+if [ "$ROLE" = "readonly" ]; then
+    exit 0
+fi
+
 # 全局缓存目录
 CACHE_ROOT="$HOME/.claude-requirements/projects/$PROJECT_NAME"
 if [ ! -d "$CACHE_ROOT" ]; then

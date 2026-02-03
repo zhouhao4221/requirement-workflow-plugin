@@ -35,16 +35,20 @@ templates/                   # 需求文档模板
 **2. 全局缓存（同步副本）**
 - 缓存目录：`~/.claude-requirements/`
 - 项目缓存路径：`~/.claude-requirements/projects/<project-name>/`
-- 仓库绑定配置：`.claude/settings.local.json` 中的 `requirementProject`
+- 仓库绑定配置：`.claude/settings.local.json` 中的 `requirementProject` 和 `requirementRole`
 - 优势：支持跨仓库共享同一套需求
 
+**仓库角色**（`requirementRole` 字段）：
+- `primary`：主仓库，拥有本地 `docs/requirements/`，可读写，修改后自动同步到缓存
+- `readonly`：只读仓库，无本地存储，仅从缓存读取需求，不可创建/编辑/变更状态
+
 **更新策略（强制自动同步）：**
-1. 创建/修改需求 → 先写入本地 `docs/requirements/`
+1. 创建/修改需求 → 先写入本地 `docs/requirements/`（仅 `primary` 角色）
 2. 本地写入成功 → **强制自动同步**到全局缓存（通过 PostToolUse Hook，无需用户确认）
-3. 读取需求 → 优先读本地，本地不存在时从缓存读取
-4. **状态更新前置条件**：本地必须存在需求文档，否则跳过更新（避免关联仓库误操作）
+3. 读取需求 → `primary` 优先读本地，`readonly` 直接读缓存
+4. **只读仓库禁止写操作**：`readonly` 仓库不执行创建、编辑、状态更新、缓存同步
 5. **以本地为准**：同步时直接用本地版本覆盖缓存，不进行冲突检测
-6. **触发工具**：Write 和 Edit 工具都会触发缓存同步（包括 active/ 和 completed/ 目录）
+6. **触发工具**：Write 和 Edit 工具都会触发缓存同步（包括 active/ 和 completed/ 目录，仅 `primary`）
 
 ### 命令结构
 
@@ -133,10 +137,10 @@ templates/                   # 需求文档模板
 │   │   └── REQ-001-用户积分.md
 │   ├── completed/
 │   └── INDEX.md                   # 需求索引
-└── .claude/settings.local.json    # { "requirementProject": "my-saas-product" }
+└── .claude/settings.local.json    # { "requirementProject": "my-saas-product", "requirementRole": "primary" }
 
 ~/frontend/                        # 前端仓库（关联仓库）
-└── .claude/settings.local.json    # { "requirementProject": "my-saas-product" }
+└── .claude/settings.local.json    # { "requirementProject": "my-saas-product", "requirementRole": "readonly" }
 
 ~/.claude-requirements/            # 全局缓存（同步副本）
 └── projects/

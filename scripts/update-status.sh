@@ -34,4 +34,8 @@ else
     sed -i "s/| 状态 | .* |/| 状态 | $NEW_STATUS |/" "$FILE_PATH"
 fi
 
-echo "✅ 状态已更新为: $NEW_STATUS"
+echo "状态已更新为: $NEW_STATUS"
+
+# 同步到全局缓存
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+"$SCRIPT_DIR/sync-cache.sh" "$FILE_PATH"

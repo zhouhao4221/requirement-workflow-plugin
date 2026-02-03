@@ -170,7 +170,8 @@ mkdir -p $CACHE_ROOT/modules
 
 ```json
 {
-  "requirementProject": "<project-name>"
+  "requirementProject": "<project-name>",
+  "requirementRole": "primary"
 }
 ```
 

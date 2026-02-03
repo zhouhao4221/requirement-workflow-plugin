@@ -23,48 +23,72 @@ description: 查看需求状态 - 详细状态和进度
 如果未提供 REQ-XXX 编号：
 
 ```python
-# 查找所有活跃需求，按修改时间排序
-candidates = find_requirements(dir="active", sort_by="mtime")
+# 根据角色决定搜索路径（步骤 1 中已解析 ROLE 和路径）
+# readonly：直接搜索缓存 active/
+# primary：搜索本地 active/，本地为空时搜索缓存 active/
+# 未绑定：仅搜索本地 active/
+candidates = find_requirements(dir=ACTIVE, sort_by="mtime")
+
+if len(candidates) == 0 and ROLE == "primary" and CACHE_ACTIVE:
+    candidates = find_requirements(dir=CACHE_ACTIVE, sort_by="mtime")
 
 if len(candidates) == 0:
-    print("📭 没有活跃的需求")
-    print("💡 创建新需求：/req:new")
-    print("💡 查看已完成：/req:status --all")
+    print("没有活跃的需求")
+    if ROLE != "readonly":
+        print("创建新需求：/req:new")
+    print("查看已完成：/req:status --all")
     exit()
 elif len(candidates) == 1:
     REQ_ID = candidates[0]
-    print(f"📌 自动选择：{REQ_ID}")
+    print(f"自动选择：{REQ_ID}")
 else:
-    print("📋 发现多个活跃需求，请选择：")
+    print("发现多个活跃需求，请选择：")
     for i, req in enumerate(candidates):
         print(f"  {i+1}. {req}")
 ```
 
-### 1. 解析存储路径（本地优先）
+### 1. 解析存储路径（按角色）
 
 ```bash
-# 本地存储路径（主存储）
-LOCAL_ROOT=docs/requirements
-LOCAL_ACTIVE=$LOCAL_ROOT/active
-LOCAL_COMPLETED=$LOCAL_ROOT/completed
-
-# 检查当前仓库绑定的项目（备用读取）
+# 读取项目配置
 PROJECT=$(cat .claude/settings.local.json 2>/dev/null | jq -r '.requirementProject // empty')
+ROLE=$(cat .claude/settings.local.json 2>/dev/null | jq -r '.requirementRole // empty')
 
-if [ -n "$PROJECT" ]; then
+if [ "$ROLE" = "readonly" ]; then
+    # 只读仓库：直接使用缓存路径
+    ROOT=~/.claude-requirements/projects/$PROJECT
+    ACTIVE=$ROOT/active
+    COMPLETED=$ROOT/completed
+    SOURCE="cache"
+elif [ "$ROLE" = "primary" ]; then
+    # 主仓库：优先本地，缓存为备用
+    LOCAL_ROOT=docs/requirements
+    ACTIVE=$LOCAL_ROOT/active
+    COMPLETED=$LOCAL_ROOT/completed
     CACHE_ROOT=~/.claude-requirements/projects/$PROJECT
     CACHE_ACTIVE=$CACHE_ROOT/active
     CACHE_COMPLETED=$CACHE_ROOT/completed
+    SOURCE="local"
+else
+    # 未绑定项目：仅使用本地
+    LOCAL_ROOT=docs/requirements
+    ACTIVE=$LOCAL_ROOT/active
+    COMPLETED=$LOCAL_ROOT/completed
+    SOURCE="local"
 fi
 ```
 
-### 2. 查找需求文档（优先本地）
+### 2. 查找需求文档（按角色）
 
-搜索位置（按优先级）：
-1. `$LOCAL_ACTIVE/REQ-XXX-*.md`
-2. `$LOCAL_COMPLETED/REQ-XXX-*.md`
+**`primary` 角色**搜索位置（按优先级）：
+1. `$ACTIVE/REQ-XXX-*.md`（本地）
+2. `$COMPLETED/REQ-XXX-*.md`（本地）
 3. `$CACHE_ACTIVE/REQ-XXX-*.md`（本地不存在时）
 4. `$CACHE_COMPLETED/REQ-XXX-*.md`（本地不存在时）
+
+**`readonly` 角色**搜索位置：
+1. `$ACTIVE/REQ-XXX-*.md`（缓存）
+2. `$COMPLETED/REQ-XXX-*.md`（缓存）
 
 如果未找到：
 ```
@@ -97,7 +121,9 @@ fi
 ├── 状态：🔨 开发中
 ├── 优先级：P1
 ├── 创建日期：2026-01-07
-└── 负责人：-
+├── 负责人：-
+├── 数据来源：本地 (primary)
+└── 项目：my-saas-product
 
 📊 生命周期
 ├── [x] 📝 草稿         2026-01-07
@@ -151,9 +177,14 @@ fi
 ═══════════════════════════════════════════════
 
 💡 可用操作：
+# primary 角色显示完整操作
 - 继续开发：/req:dev REQ-001
 - 编辑需求：/req:edit REQ-001
 - 进入测试：/req:test REQ-001
+
+# readonly 角色仅显示只读操作
+# - 查看需求列表：/req
+# - 查看模块：/req:modules
 ```
 
 ---

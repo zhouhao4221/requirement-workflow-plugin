@@ -53,9 +53,12 @@ ls ~/.claude-requirements/projects/<project-name>/
 
 ```json
 {
-  "requirementProject": "<project-name>"
+  "requirementProject": "<project-name>",
+  "requirementRole": "readonly"
 }
 ```
+
+> `/req:use` 绑定的仓库默认为 `readonly` 角色，仅从缓存读取需求。如需升级为主仓库，使用 `/req:init <project-name>` 初始化本地存储。
 
 ### 5. 更新全局索引
 
