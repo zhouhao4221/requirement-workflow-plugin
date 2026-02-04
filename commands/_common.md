@@ -43,10 +43,25 @@
 
 **强制同步机制**：
 
-通过 PostToolUse Hook **自动强制触发**，任何对 `docs/requirements/**/*.md` 的写入或编辑操作都会**立即自动同步**到缓存，**无需用户确认**：
+通过 PostToolUse Hook **自动强制触发**，仅当命令涉及需求文档修改时触发缓存同步：
+
+触发同步的命令：
+- `/req:new` - 创建需求文档
+- `/req:new-quick` - 创建快速修复文档
+- `/req:edit` - 编辑需求文档
+- `/req:review` - 更新评审状态
+- `/req:dev` - 更新开发状态和进度
+- `/req:test` - 更新测试状态和结果
+- `/req:done` - 完成归档
+- `/req:upgrade` - 升级 QUICK 为 REQ
+- `/req:modules new` - 创建模块文档
+
+不触发同步的命令（只读操作）：`/req`、`/req:status`、`/req:projects`、`/req:cache`、`/req:use`、`/req:init`、`/req:migrate`、`/req:test_regression`、`/req:test_new`
+
+同步配置：
 - Hook 脚本：`scripts/sync-cache.sh`
-- 触发条件：**Write 或 Edit 工具**操作需求文档后
-- 同步范围：REQ-XXX、QUICK-XXX 需求文档及模块文档（包括 active/ 和 completed/ 目录）
+- 触发条件：**Write 或 Edit 工具**操作 `docs/requirements/` 目录下的文件后
+- 同步范围：REQ-XXX、QUICK-XXX 需求文档及模块文档（modules/），不含 INDEX.md、template.md
 - **执行方式**：静默自动执行，仅输出同步状态提示
 
 **重要原则**：

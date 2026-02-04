@@ -98,7 +98,25 @@ templates/                   # 需求文档模板
   - `validate-requirement.sh` - 验证需求文档格式
   - `sync-cache.sh` - **强制自动同步**到全局缓存（无需用户确认，以本地为准）
 
-**缓存同步规则**：任何对需求文档的修改（包括 active/ 和 completed/ 目录）都会**强制自动**同步到缓存，无需用户确认。
+**缓存同步触发规则**：
+
+仅当命令涉及需求文档修改时触发缓存同步：
+
+| 触发同步的命令 | 操作说明 |
+|--------------|---------|
+| `/req:new` | 创建需求文档 |
+| `/req:new-quick` | 创建快速修复文档 |
+| `/req:edit` | 编辑需求文档 |
+| `/req:review` | 更新评审状态 |
+| `/req:dev` | 更新开发状态和进度 |
+| `/req:test` | 更新测试状态和结果 |
+| `/req:done` | 完成归档（移动到 completed/） |
+| `/req:upgrade` | 升级 QUICK 为 REQ |
+| `/req:modules new` | 创建模块文档 |
+
+不触发同步的命令（只读操作）：`/req`、`/req:status`、`/req:projects`、`/req:cache`、`/req:use`、`/req:init`、`/req:migrate`、`/req:test_regression`、`/req:test_new`
+
+**同步范围**：`docs/requirements/` 目录下的 REQ-XXX、QUICK-XXX 需求文档及模块文档（modules/），其他文件（INDEX.md、template.md）不同步。
 
 ## 需求生命周期状态
 

@@ -1,28 +1,49 @@
 #!/bin/bash
 # sync-cache.sh
 # 需求文档写入后自动同步到全局缓存
-# 由 PostToolUse Hook 触发
+# 由 PostToolUse Hook 触发（Write/Edit 工具操作后）
+#
+# 触发缓存更新的命令（涉及需求文档修改）：
+#   - /req:new        创建需求文档
+#   - /req:new-quick  创建快速修复文档
+#   - /req:edit       编辑需求文档
+#   - /req:review     更新评审状态
+#   - /req:dev        更新开发状态和进度
+#   - /req:test       更新测试状态和结果
+#   - /req:done       完成归档（移动到 completed/）
+#   - /req:upgrade    升级 QUICK 为 REQ
+#   - /req:modules new 创建模块文档
+#
+# 不触发缓存更新的命令（只读操作）：
+#   - /req, /req:status, /req:projects, /req:cache, /req:use
+#   - /req:init, /req:migrate, /req:test_regression, /req:test_new
 
 FILE_PATH="$1"
 
-# 非需求文档直接跳过
+# 空路径或文件不存在，静默跳过
 if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
     exit 0
 fi
+
+# 仅处理 docs/requirements/ 目录下的 .md 文件
 if [[ ! "$FILE_PATH" =~ docs/requirements/.+\.md$ ]]; then
     exit 0
 fi
 
-# 检查是否是 REQ 或 QUICK 需求文档
+# 检查文件类型
 FILENAME=$(basename "$FILE_PATH")
-if [[ ! "$FILENAME" =~ ^(REQ|QUICK)-[0-9]+ ]]; then
-    # 非需求文档（可能是 INDEX.md、template.md 或模块文档）
-    # 也需要同步模块文档
-    if [[ "$FILE_PATH" =~ docs/requirements/modules/ ]]; then
-        IS_MODULE=true
-    else
-        exit 0
-    fi
+IS_REQUIREMENT=false
+IS_MODULE=false
+
+# REQ 或 QUICK 需求文档
+if [[ "$FILENAME" =~ ^(REQ|QUICK)-[0-9]+ ]]; then
+    IS_REQUIREMENT=true
+# 模块文档
+elif [[ "$FILE_PATH" =~ docs/requirements/modules/ ]]; then
+    IS_MODULE=true
+# 其他文件（INDEX.md、template.md 等）不同步
+else
+    exit 0
 fi
 
 # 查找项目根目录（向上查找 .claude 目录）
