@@ -30,19 +30,21 @@ if [[ "$FILENAME" =~ ^REQ-[0-9]+ ]]; then
     grep -q "## 元信息" "$FILE_PATH" || MISSING="$MISSING\n  - 元信息"
     grep -q "## 生命周期" "$FILE_PATH" || MISSING="$MISSING\n  - 生命周期"
 
-    # 正文章节（一 ~ 十二）
+    # 需求定义章节（一 ~ 六）
     grep -q "## 一、需求描述" "$FILE_PATH" || MISSING="$MISSING\n  - 一、需求描述"
     grep -q "## 二、功能清单" "$FILE_PATH" || MISSING="$MISSING\n  - 二、功能清单"
     grep -q "## 三、业务规则" "$FILE_PATH" || MISSING="$MISSING\n  - 三、业务规则"
     grep -q "## 四、使用场景" "$FILE_PATH" || MISSING="$MISSING\n  - 四、使用场景"
-    grep -q "## 五、数据模型" "$FILE_PATH" || MISSING="$MISSING\n  - 五、数据模型"
-    grep -q "## 六、API 设计" "$FILE_PATH" || MISSING="$MISSING\n  - 六、API 设计"
-    grep -q "## 七、文件改动清单" "$FILE_PATH" || MISSING="$MISSING\n  - 七、文件改动清单"
-    grep -q "## 八、实现步骤" "$FILE_PATH" || MISSING="$MISSING\n  - 八、实现步骤"
-    grep -q "## 九、测试要点" "$FILE_PATH" || MISSING="$MISSING\n  - 九、测试要点"
-    grep -q "## 十、评审记录" "$FILE_PATH" || MISSING="$MISSING\n  - 十、评审记录"
-    grep -q "## 十一、变更记录" "$FILE_PATH" || MISSING="$MISSING\n  - 十一、变更记录"
-    grep -q "## 十二、关联信息" "$FILE_PATH" || MISSING="$MISSING\n  - 十二、关联信息"
+    grep -q "## 五、API 设计" "$FILE_PATH" || MISSING="$MISSING\n  - 五、API 设计"
+    grep -q "## 六、测试要点" "$FILE_PATH" || MISSING="$MISSING\n  - 六、测试要点"
+
+    # 流程章节（七 ~ 九）
+    grep -q "## 七、评审记录" "$FILE_PATH" || MISSING="$MISSING\n  - 七、评审记录"
+    grep -q "## 八、变更记录" "$FILE_PATH" || MISSING="$MISSING\n  - 八、变更记录"
+    grep -q "## 九、关联信息" "$FILE_PATH" || MISSING="$MISSING\n  - 九、关联信息"
+
+    # 实现方案章节（十，dev 阶段填充）
+    grep -q "## 十、实现方案" "$FILE_PATH" || MISSING="$MISSING\n  - 十、实现方案"
 
     if [ -n "$MISSING" ]; then
         echo -e "缺少章节:$MISSING"
