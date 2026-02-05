@@ -4,6 +4,7 @@
 # 由 PostToolUse Hook 触发（Write/Edit 工具操作后）
 #
 # 仅对 docs/requirements/ 目录下的需求文档（REQ-XXX、QUICK-XXX）进行验证
+# 根据需求类型检查对应模板的所有必须章节
 
 FILE_PATH="$1"
 
@@ -19,22 +20,51 @@ fi
 
 FILENAME=$(basename "$FILE_PATH")
 
-# 仅对 REQ/QUICK 需求文档验证章节
-if [[ "$FILENAME" =~ ^(REQ|QUICK)-[0-9]+ ]]; then
+# 正式需求 REQ-XXX：验证完整模板章节
+if [[ "$FILENAME" =~ ^REQ-[0-9]+ ]]; then
     echo "验证需求文档: $FILENAME"
 
     MISSING=""
-    if ! grep -q "## 元信息" "$FILE_PATH"; then
-        MISSING="$MISSING\n  - 元信息"
-    fi
-    if ! grep -q "## 一、需求描述" "$FILE_PATH"; then
-        MISSING="$MISSING\n  - 需求描述"
-    fi
-    if ! grep -q "## 二、功能清单" "$FILE_PATH"; then
-        MISSING="$MISSING\n  - 功能清单"
-    fi
+
+    # 元信息和生命周期
+    grep -q "## 元信息" "$FILE_PATH" || MISSING="$MISSING\n  - 元信息"
+    grep -q "## 生命周期" "$FILE_PATH" || MISSING="$MISSING\n  - 生命周期"
+
+    # 正文章节（一 ~ 十二）
+    grep -q "## 一、需求描述" "$FILE_PATH" || MISSING="$MISSING\n  - 一、需求描述"
+    grep -q "## 二、功能清单" "$FILE_PATH" || MISSING="$MISSING\n  - 二、功能清单"
+    grep -q "## 三、业务规则" "$FILE_PATH" || MISSING="$MISSING\n  - 三、业务规则"
+    grep -q "## 四、使用场景" "$FILE_PATH" || MISSING="$MISSING\n  - 四、使用场景"
+    grep -q "## 五、数据模型" "$FILE_PATH" || MISSING="$MISSING\n  - 五、数据模型"
+    grep -q "## 六、API 设计" "$FILE_PATH" || MISSING="$MISSING\n  - 六、API 设计"
+    grep -q "## 七、文件改动清单" "$FILE_PATH" || MISSING="$MISSING\n  - 七、文件改动清单"
+    grep -q "## 八、实现步骤" "$FILE_PATH" || MISSING="$MISSING\n  - 八、实现步骤"
+    grep -q "## 九、测试要点" "$FILE_PATH" || MISSING="$MISSING\n  - 九、测试要点"
+    grep -q "## 十、评审记录" "$FILE_PATH" || MISSING="$MISSING\n  - 十、评审记录"
+    grep -q "## 十一、变更记录" "$FILE_PATH" || MISSING="$MISSING\n  - 十一、变更记录"
+    grep -q "## 十二、关联信息" "$FILE_PATH" || MISSING="$MISSING\n  - 十二、关联信息"
 
     if [ -n "$MISSING" ]; then
         echo -e "缺少章节:$MISSING"
+        echo "请严格按照模板格式补全所有章节（参考 docs/requirements/template.md）"
+    fi
+fi
+
+# 快速修复 QUICK-XXX：验证简化模板章节
+if [[ "$FILENAME" =~ ^QUICK-[0-9]+ ]]; then
+    echo "验证快速需求文档: $FILENAME"
+
+    MISSING=""
+
+    grep -q "## 元信息" "$FILE_PATH" || MISSING="$MISSING\n  - 元信息"
+    grep -q "## 生命周期" "$FILE_PATH" || MISSING="$MISSING\n  - 生命周期"
+    grep -q "## 问题描述" "$FILE_PATH" || MISSING="$MISSING\n  - 问题描述"
+    grep -q "## 实现方案" "$FILE_PATH" || MISSING="$MISSING\n  - 实现方案"
+    grep -q "## 验证方式" "$FILE_PATH" || MISSING="$MISSING\n  - 验证方式"
+    grep -q "## 开发记录" "$FILE_PATH" || MISSING="$MISSING\n  - 开发记录"
+
+    if [ -n "$MISSING" ]; then
+        echo -e "缺少章节:$MISSING"
+        echo "请严格按照模板格式补全所有章节（参考 quick-template.md）"
     fi
 fi

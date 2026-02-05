@@ -96,66 +96,37 @@
 
 ### 5.1 新增/修改表
 
-```sql
--- 表结构定义
-CREATE TABLE `table_name` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `tenant_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '租户ID',
-    -- 字段定义...
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_tenant_id` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表注释';
-```
+> 列出涉及的 Model 文件，表结构以代码为准
+
+- `internal/xxx/model/xxx_model.go` - 新增/修改说明
+- `docs/migrations/x.x/x.x.x.sql` - 迁移脚本（如涉及）
 
 ### 5.2 字段说明
 
-| 字段 | 类型 | 必填 | 说明 |
-|-----|------|-----|------|
-| id | bigint | 是 | 主键 |
-| tenant_id | bigint | 是 | 租户ID |
+| 字段 | 类型 | 长度 | 必填 | 说明 |
+|-----|------|-----|-----|------|
+| id | bigint | - | 是 | 主键 |
+| tenant_id | bigint | - | 是 | 租户ID |
+
+### 5.3 实体关系
+
+> 列出实体之间的关联关系
+
+- **EntityA**（实体A）
+  - 关系：一个 EntityA → 多个 EntityB
+- **EntityB**（实体B）
+  - 关系：属于一个 EntityA
 
 ---
 
 ## 六、API 设计
 
-### 6.1 接口1：创建XXX
-
-```
-POST /api/v1/module/resource
-```
-
-**请求参数：**
-
-| 字段 | 类型 | 必填 | 说明 |
-|-----|------|-----|------|
-| name | string | 是 | 名称 |
-
-**响应示例：**
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "id": 1
-  }
-}
-```
-
-### 6.2 接口2：查询XXX
-
-```
-GET /api/v1/module/resource
-```
-
-**查询参数：**
-
-| 字段 | 类型 | 必填 | 说明 |
-|-----|------|-----|------|
-| page | int | 否 | 页码，默认1 |
-| page_size | int | 否 | 每页数量，默认20 |
+| 接口名称 | 说明 |
+|---------|------|
+| 创建XXX | 描述... |
+| 查询XXX列表 | 描述... |
+| 更新XXX | 描述... |
+| 删除XXX | 描述... |
 
 ---
 

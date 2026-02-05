@@ -81,6 +81,7 @@ templates/                   # 需求文档模板
 - `/req:projects` - 列出所有项目
 - `/req:migrate <project-name>` - 将本地需求迁移到全局缓存
 - `/req:cache <action>` - 缓存管理（info/clear/clear-all/rebuild/export）
+- `/req:update-template [模板名] [--force]` - 将插件最新模板同步到项目本地
 
 ### 技能（自动触发）
 
@@ -114,7 +115,7 @@ templates/                   # 需求文档模板
 | `/req:upgrade` | 升级 QUICK 为 REQ |
 | `/req:modules new` | 创建模块文档 |
 
-不触发同步的命令（只读操作）：`/req`、`/req:status`、`/req:projects`、`/req:cache`、`/req:use`、`/req:init`、`/req:migrate`、`/req:test_regression`、`/req:test_new`
+不触发同步的命令（只读操作）：`/req`、`/req:status`、`/req:projects`、`/req:cache`、`/req:use`、`/req:init`、`/req:migrate`、`/req:test_regression`、`/req:test_new`、`/req:update-template`
 
 **同步范围**：`docs/requirements/` 目录下的 REQ-XXX、QUICK-XXX 需求文档及模块文档（modules/），其他文件（INDEX.md、template.md）不同步。
 
