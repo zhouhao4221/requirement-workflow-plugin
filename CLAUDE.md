@@ -67,6 +67,7 @@ templates/                   # 需求文档模板
 - `/req:test_new` - 为新功能创建测试用例（UT/API/E2E）
 - `/req:done` - 完成需求
 - `/req:status` - 查看需求状态
+- `/req:show` - 查看需求详情（完整业务内容，纯只读）
 - `/req --type=后端` - 按类型筛选需求列表
 
 **模块管理命令：**
@@ -126,7 +127,7 @@ templates/                   # 需求文档模板
 | `/req:modules new` | 创建模块文档 |
 | `/req:prd-edit` | 编辑 PRD 文档 |
 
-不触发同步的命令（只读操作）：`/req`、`/req:status`、`/req:projects`、`/req:cache`、`/req:use`、`/req:init`、`/req:migrate`、`/req:test_regression`、`/req:test_new`、`/req:update-template`、`/req:prd`、`/req:changelog`、`/req:commit`
+不触发同步的命令（只读操作）：`/req`、`/req:status`、`/req:show`、`/req:projects`、`/req:cache`、`/req:use`、`/req:init`、`/req:migrate`、`/req:test_regression`、`/req:test_new`、`/req:update-template`、`/req:prd`、`/req:changelog`、`/req:commit`
 
 **同步范围**：`docs/requirements/` 目录下的 REQ-XXX、QUICK-XXX 需求文档、模块文档（modules/）及 PRD.md，其他文件（INDEX.md、template.md）不同步。
 

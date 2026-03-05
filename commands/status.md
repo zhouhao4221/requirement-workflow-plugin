@@ -45,6 +45,8 @@ else:
     print("发现多个活跃需求，请选择：")
     for i, req in enumerate(candidates):
         print(f"  {i+1}. {req}")
+    choice = input()  # 用户输入编号
+    REQ_ID = candidates[int(choice) - 1]
 ```
 
 ### 1. 解析存储路径（按角色）

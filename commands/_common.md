@@ -57,7 +57,7 @@
 - `/req:modules new` - 创建模块文档
 - `/req:prd-edit` - 编辑 PRD 文档
 
-不触发同步的命令（只读操作）：`/req`、`/req:status`、`/req:projects`、`/req:cache`、`/req:use`、`/req:init`、`/req:migrate`、`/req:test_regression`、`/req:test_new`、`/req:prd`、`/req:changelog`、`/req:commit`
+不触发同步的命令（只读操作）：`/req`、`/req:status`、`/req:show`、`/req:projects`、`/req:cache`、`/req:use`、`/req:init`、`/req:migrate`、`/req:test_regression`、`/req:test_new`、`/req:prd`、`/req:changelog`、`/req:commit`
 
 同步配置：
 - Hook 脚本：`scripts/sync-cache.sh`
