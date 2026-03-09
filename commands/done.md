@@ -29,7 +29,21 @@ description: 完成需求 - 标记完成并归档
 ### 2. 前置检查
 
 - 状态必须为「测试中」
-- 检查测试完成情况，有未通过时警告并确认
+- 检查测试完成情况，有未通过时：
+
+⚠️🔴 强制确认：
+
+```
+⚠️ **存在未通过的测试**
+以下测试未通过：
+- [列出未通过的测试项]
+
+强行完成可能导致带缺陷上线。
+
+**确认操作：(y/n)**
+- y - 忽略未通过测试，继续完成
+- n - 取消完成，先修复测试问题
+```
 
 ### 3. 生成完成摘要
 
@@ -58,6 +72,13 @@ description: 完成需求 - 标记完成并归档
 - internal/oms/biz/sales_order_biz.go
 - internal/dashboard/store/sales_dashboard_store.go
 - internal/dashboard/biz/sales_dashboard_biz.go
+
+⚠️🔴 强制确认（此操作不可逆）：
+
+⚠️ 即将归档需求 REQ-XXX
+- 需求文档将从 active/ 移至 completed/
+- 状态将变为「已完成」
+- 此操作不可逆，归档后需手动恢复
 
 是否确认完成？(y/n)
 ```

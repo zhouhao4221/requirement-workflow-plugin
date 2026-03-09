@@ -187,8 +187,10 @@ else:
   A  internal/sys/biz/dept_channel.go
   M  internal/sys/router.go
 
+⚠️🔴 强制确认：
+
 确认提交？(y/n/e)
-  y - 确认提交
+  y - 确认提交（写入 git 历史）
   n - 取消
   e - 编辑消息
 ```
