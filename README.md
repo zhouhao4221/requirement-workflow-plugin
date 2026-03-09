@@ -16,26 +16,27 @@ Claude Code 插件 — 需求全流程工作流管理，覆盖从需求分析、
 
 ## 安装
 
-> 要求：Claude Code v2.0.12 或更高版本
+> 要求：Claude Code v1.0.33 或更高版本（推荐 v2.1+）
 
-### 从 GitHub 安装
+### 从 GitHub 安装（推荐）
 
 ```bash
-claude /install-plugin github:zhouhao4221/requirement-workflow-plugin
+claude plugin add github:zhouhao4221/requirement-workflow-plugin
 ```
 
-### 本地安装
+### 本地安装（开发调试）
 
-克隆仓库后，在项目的 `.claude/settings.json` 中配置：
+```bash
+git clone https://github.com/zhouhao4221/requirement-workflow-plugin.git
+claude plugin add ./requirement-workflow-plugin
+```
 
-```json
-{
-  "permissions": {
-    "allow": [
-      "mcp::req__*"
-    ]
-  }
-}
+### 插件管理
+
+```bash
+claude plugin list                    # 查看已安装插件
+claude plugin update --all            # 更新所有插件
+claude plugin remove req              # 卸载插件
 ```
 
 ## 快速开始
