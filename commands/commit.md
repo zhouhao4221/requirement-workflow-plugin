@@ -40,43 +40,24 @@ git diff --cached --stat
 ```
 
 **有未暂存变更时：**
-展示变更文件列表，询问用户是否全部暂存或选择性暂存：
+自动将所有变更暂存（`git add -A`），展示暂存结果：
 
 ```
-📁 工作区变更：
-
-已暂存（staged）：
+📁 已暂存所有变更：
   M  internal/sys/biz/dept_channel.go
   A  internal/sys/model/sys_dept_channel_model.go
-
-未暂存（unstaged）：
   M  internal/sys/controller/v1/sys_dept.go
   M  internal/sys/router.go
-
-是否将未暂存的文件也加入提交？
-1. 全部加入
-2. 仅提交已暂存的文件
-3. 选择性暂存（逐个确认）
 ```
 
-### 2. Code Review 提醒（强制）
+### 2. Code Review 提醒
 
-提交前**必须**提醒用户确认是否已完成代码审查：
+提交前展示代码审查提醒（信息展示，不等待回复）：
 
 ```
-🔍 提交前确认：是否已完成 Code Review？
-   （检查要点：逻辑正确性、安全隐患、错误处理、代码规范、调试代码清理）
-
-👉 回车继续 | 输入 n 暂停提交
+⚠️ 提交前请确认已完成 Code Review
+   检查要点：逻辑正确性、安全隐患、错误处理、代码规范、调试代码清理
 ```
-
-- 回车/任意非 n 内容 → 继续提交流程
-- `n` → 终止提交：
-  ```
-  ⏸️ 提交已暂停，请先完成代码审查后重新执行 /req:commit
-  ```
-
-**此步骤不可跳过**，每次执行 `/req:commit` 都必须确认。
 
 ### 3. 检测当前需求
 
@@ -189,12 +170,9 @@ else:
   A  internal/sys/biz/dept_channel.go
   M  internal/sys/router.go
 
-⚠️🔴 强制确认：
-
-👉 回车确认提交 | 输入 n 取消 | 输入 e 编辑消息
 ```
 
-用户确认后执行：
+展示预览后直接执行提交（Hook 会弹出原生确认对话框）：
 
 ```bash
 git commit -m "新功能: 实现部门渠道关联 (REQ-001)"
@@ -230,8 +208,7 @@ git commit -m "新功能: 实现部门渠道关联 (REQ-001)"
 交互式流程中增加确认：
 
 ```
-⚠️ 此变更是否包含破坏性改动（Breaking Change）？
-👉 回车跳过 | 输入 y 标记为 Breaking Change
+如果变更涉及 API 返回结构变更、数据库 schema 变更等，自动标记为 Breaking Change。
 ```
 
 ---
@@ -248,12 +225,7 @@ git commit -m "新功能: 实现部门渠道关联 (REQ-001)"
 - 添加获取可选渠道接口
 ```
 
-交互式流程中：
-
-```
-是否添加详细说明？
-👉 回车跳过 | 输入 y 添加
-```
+当变更涉及多个文件或逻辑复杂时，自动添加 body 说明。
 
 ---
 

@@ -168,7 +168,6 @@ internal/store/dept_test.go
 ⚠️ 以下变更文件缺少 UT：
 - internal/controller/dept_test.go
 
-👉 回车创建 | 输入 n 跳过 | 输入 skip 不再提示:
   y → 执行 /req:test_new REQ-001 --type=ut 的流程，生成缺失的测试文件
   n → 记录为待补充，继续后续阶段
   skip → 跳过，不再提示
@@ -193,8 +192,6 @@ API 测试需要测试环境（Docker + 后端服务）：
 
 ```
 ⚠️ 测试环境未就绪
-
-👉 回车启动测试环境 | 输入 n 跳过:
 
 🚀 启动测试环境...
 docker-compose -f docker-compose.test.yml up -d
@@ -235,7 +232,6 @@ tests/api/dept_channel_api_test.go
 ⚠️ 以下测试要点尚未被 API 测试覆盖：
 - [ ] 部门更新时修改渠道关联
 
-👉 回车创建 | 输入 n 跳过 | 输入 skip 不再提示:
   y → 执行 /req:test_new REQ-001 --type=api 的流程
   n → 记录为待补充，继续后续阶段
   skip → 跳过
@@ -246,7 +242,6 @@ tests/api/dept_channel_api_test.go
 ```
 ⚠️ 未找到需求相关的 API 测试文件
 
-👉 回车创建 | 输入 n 跳过 | 输入 skip 不再提示:
   y → 执行 /req:test_new REQ-001 --type=api
 ```
 
@@ -297,7 +292,6 @@ npx playwright test tests/e2e/dept-channel.spec.ts
 - [ ] 订单列表按渠道正确过滤
 - [ ] Dashboard 数据按渠道正确过滤
 
-👉 回车创建 | 输入 n 跳过 | 输入 skip 不再提示:
   y → 执行 /req:test_new REQ-001 --type=e2e
 ```
 
@@ -306,7 +300,6 @@ npx playwright test tests/e2e/dept-channel.spec.ts
 ```
 ⚠️ 未找到需求相关的 E2E 测试文件
 
-👉 回车创建 | 输入 n 跳过 | 输入 skip 不再提示:
   y → 执行 /req:test_new REQ-001 --type=e2e
   skip → 跳过 E2E 阶段
 ```

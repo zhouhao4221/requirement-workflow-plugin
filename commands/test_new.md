@@ -323,8 +323,6 @@ func TestUpdateDeptChannels(t *testing.T) {
 - Docker 容器（MySQL + Redis）
 - 后端服务（本地）
 - 前端服务（本地）
-
-👉 回车检查并启动测试环境 | 输入 n 跳过:
 ```
 
 #### 6.1 识别用户流程

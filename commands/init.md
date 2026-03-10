@@ -266,8 +266,6 @@ mkdir -p $CACHE_ROOT/templates
 
 💡 若要为历史项目补充缺失文件，请使用:
    /req:init <project-name> --reinit
-
-👉 回车绑定 | 输入 n 跳过
 ```
 
 ---

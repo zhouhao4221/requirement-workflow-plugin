@@ -139,7 +139,6 @@ mkdir -p $OUTPUT_DIR
 # 检查是否已存在
 if [ -f "$OUTPUT_FILE" ]; then
     echo "⚠️ 版本说明已存在：$OUTPUT_FILE"
-    echo "👉 回车覆盖 | 输入 n 取消"
     # 用户确认后继续，否则终止
 fi
 ```
