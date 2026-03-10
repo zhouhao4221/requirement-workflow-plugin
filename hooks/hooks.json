@@ -2,20 +2,22 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Write",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "echo '📝 正在更新需求文档...'"
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/confirm-before-write.sh",
+            "timeout": 5
           }
         ]
       },
       {
-        "matcher": "Edit",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "echo '📝 正在编辑需求文档...'"
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/confirm-before-commit.sh",
+            "timeout": 5
           }
         ]
       }
