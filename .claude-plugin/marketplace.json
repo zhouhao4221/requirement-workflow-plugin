@@ -1,19 +1,19 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "dev-workflow",
-  "version": "1.0.0",
-  "description": "开发流程工具集",
   "owner": {
     "name": "Haiqing",
-    "email": "haiqing@example.com"
+    "email": "zhouhao4221@gmail.com"
+  },
+  "metadata": {
+    "description": "开发流程工具集",
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "req",
       "description": "需求全流程工作流管理 - 从需求分析到测试的完整生命周期管理",
-      "source": "./plugins/requirement-workflow",
-      "category": "development",
-      "version": "1.1.0"
+      "source": "./",
+      "category": "development"
     }
   ]
 }
