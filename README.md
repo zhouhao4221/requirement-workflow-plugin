@@ -239,6 +239,10 @@ requirement-workflow/
 └── README.md
 ```
 
+## 使用教程
+
+完整的分步使用教程见 [docs/tutorial.md](docs/tutorial.md)，包含从安装到完成需求的全流程演示。
+
 ## 许可证
 
 [Apache License 2.0](LICENSE)
