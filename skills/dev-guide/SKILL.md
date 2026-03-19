@@ -89,6 +89,46 @@ docs/requirements/modules/<模块名>.md
 
 ---
 
+## 二-B、分支管理
+
+> 仅 `primary` 仓库执行，`readonly` 仓库跳过。
+
+### 1. 工作区清洁检查
+
+执行 `git status --porcelain`。若有未提交改动，列出改动文件，提示用户先 commit 或 stash，**终止流程**。
+
+### 2. 检测主分支
+
+优先 `git symbolic-ref refs/remotes/origin/HEAD`，失败时依次尝试 `origin/main`、`origin/master`，都失败回退 `main`。
+
+### 3. 分支切换或创建
+
+**已有 branch 字段**（元信息 `branch` 非 `-`）：
+- 本地存在 → `git checkout <branch>`
+- 仅远程存在 → `git checkout -b <branch> origin/<branch>`
+- 都不存在 → 从主分支创建 `git checkout -b <branch> <主分支>`
+
+**首次进入**（`branch` 为 `-` 或缺失）：
+1. 从需求标题生成英文 slug（小写 kebab-case，最多 5 词，ASCII only）
+2. 分支名格式：
+   - REQ → `feat/REQ-XXX-<slug>`
+   - QUICK → `fix/QUICK-XXX-<slug>`
+3. 展示分支名，等待用户确认（可修改）
+4. 创建分支 `git checkout -b <branch> <主分支>`
+5. 将分支名写入需求文档元信息 `branch` 字段
+
+### 4. 分支命名规则
+
+| 规则 | 说明 |
+|------|------|
+| 前缀 | REQ → `feat/`，QUICK → `fix/` |
+| 编号 | 保留完整编号（REQ-001、QUICK-003） |
+| slug | 英文翻译，lowercase kebab-case |
+| 长度 | slug 部分最多 5 个单词 |
+| 字符 | 仅 `[a-z0-9-/]` |
+
+---
+
 ## 三、加载需求上下文
 
 ### 读取需求定义

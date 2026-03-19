@@ -132,6 +132,24 @@ templates/                   # 需求文档模板
 
 **同步范围**：`docs/requirements/` 目录下的 REQ-XXX、QUICK-XXX 需求文档、模块文档（modules/）及 PRD.md，其他文件（INDEX.md、template.md）不同步。
 
+### Git 分支管理
+
+`/req:dev` 命令自动管理开发分支：
+
+**分支命名规则**：
+- REQ-XXX → `feat/REQ-XXX-<english-slug>`
+- QUICK-XXX → `fix/QUICK-XXX-<english-slug>`
+- slug：需求标题的英文翻译，lowercase kebab-case，最多 5 词
+
+**分支字段**：需求文档元信息中的 `branch` 字段记录分支名，确保跨会话确定性。
+
+**行为**：
+- 首次 `/req:dev`：AI 生成 slug → 用户确认 → 创建分支 → 写入文档
+- 再次 `/req:dev`：读取 `branch` 字段 → 切换到该分支
+- `/req:done`：完成报告中提醒合并分支（不自动执行）
+- 仅 `primary` 仓库执行，`readonly` 跳过
+- 工作区有未提交改动时拒绝操作
+
 ## 需求生命周期状态
 
 ```

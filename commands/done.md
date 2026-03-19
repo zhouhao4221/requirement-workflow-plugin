@@ -136,6 +136,7 @@ $REQ_COMPLETED/REQ-001-部门渠道关联.md
 ═══════════════════════════════════════════════
 
 💡 后续操作：
+- 合并分支（如有）：git checkout <主分支> && git merge <branch> && git branch -d <branch>
 - 查看历史需求：ls docs/requirements/completed/
 - 创建新需求：/req:new
 - 查看活跃需求：/req

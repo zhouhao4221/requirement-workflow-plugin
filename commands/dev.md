@@ -54,6 +54,48 @@ description: 需求开发 - 启动或继续开发
 
 **重要**：正式需求 (REQ) 未通过评审**不能**开始开发；快速修复 (QUICK) 跳过评审环节；readonly 仓库允许开发已完成的需求。
 
+### 2.5 分支管理
+
+> 仅 `primary` 仓库执行，`readonly` 仓库跳过此步骤。
+
+#### 工作区检查
+
+执行 `git status --porcelain`，若有未提交的改动：
+- 列出改动文件，提示用户先 commit 或 stash
+- **终止流程**，不得静默跳过
+
+#### 检测主分支
+
+按优先级检测基准分支：
+1. `git symbolic-ref refs/remotes/origin/HEAD` → 提取分支名
+2. 失败 → `git rev-parse --verify origin/main`，再失败 → `origin/master`
+3. 都失败 → 回退 `main`
+
+#### 分支处理
+
+**情况 A：需求文档元信息 `branch` 字段有值（非 `-`）**
+
+1. 读取 `branch` 字段值
+2. 检查分支是否存在：
+   - 本地存在 → `git checkout <branch>`
+   - 仅远程存在 → `git checkout -b <branch> origin/<branch>`
+   - 都不存在 → `git checkout -b <branch> <主分支>`
+
+**情况 B：`branch` 字段为 `-` 或缺失（首次进入）**
+
+1. AI 根据需求标题生成英文 slug（lowercase kebab-case，最多 5 词，仅 ASCII）
+2. 拼接分支名：
+   - REQ-XXX → `feat/REQ-XXX-<slug>`
+   - QUICK-XXX → `fix/QUICK-XXX-<slug>`
+3. 展示分支名供用户确认（可修改）：
+   ```
+   将创建开发分支：feat/REQ-001-user-points
+   基于分支：main
+   ```
+4. 用户确认后：
+   - `git checkout -b <branch> <主分支>`
+   - 将分支名写入需求文档元信息的 `branch` 字段
+
 ### 3. 加载上下文
 
 读取需求文档的需求定义章节：需求描述、功能清单、业务规则、使用场景、API 设计、测试要点
