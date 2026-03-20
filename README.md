@@ -21,22 +21,29 @@ Claude Code 插件 — 需求全流程工作流管理，覆盖从需求分析、
 ### 从 GitHub 安装（推荐）
 
 ```bash
-claude plugin add github:zhouhao4221/requirement-workflow-plugin
+# 1. 添加插件仓库为 marketplace
+claude plugins marketplace add https://github.com/zhouhao4221/requirement-workflow-plugin
+
+# 2. 从 marketplace 安装插件
+claude plugins install req@dev-workflow
 ```
 
 ### 本地安装（开发调试）
 
 ```bash
 git clone https://github.com/zhouhao4221/requirement-workflow-plugin.git
-claude plugin add ./requirement-workflow-plugin
+claude plugins marketplace add ./requirement-workflow-plugin
+claude plugins install req@dev-workflow
 ```
 
 ### 插件管理
 
 ```bash
-claude plugin list                    # 查看已安装插件
-claude plugin update --all            # 更新所有插件
-claude plugin remove req              # 卸载插件
+claude plugins list                              # 查看已安装插件
+claude plugins update req@dev-workflow            # 更新插件
+claude plugins uninstall req@dev-workflow          # 卸载插件
+claude plugins marketplace list                   # 查看已配置的 marketplace
+claude plugins marketplace update                 # 更新所有 marketplace
 ```
 
 ## 快速开始

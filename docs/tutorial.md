@@ -11,11 +11,14 @@
 ### 1.1 安装插件
 
 ```bash
-# 从 GitHub 安装
-claude plugin add github:zhouhao4221/requirement-workflow-plugin
+# 1. 添加插件仓库为 marketplace
+claude plugins marketplace add https://github.com/zhouhao4221/requirement-workflow-plugin
+
+# 2. 从 marketplace 安装插件
+claude plugins install req@dev-workflow
 
 # 验证安装
-claude plugin list
+claude plugins list
 ```
 
 ### 1.2 初始化需求项目
