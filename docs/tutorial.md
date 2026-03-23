@@ -2,7 +2,7 @@
 
 本教程以一个完整示例，演示从安装插件到完成需求的全流程。
 
-> 示例场景：为一个 Go 后端项目开发「用户积分规则管理」功能。
+> 示例场景：为一个后端项目开发「用户积分规则管理」功能。
 
 ---
 
@@ -35,7 +35,70 @@ claude plugins list
 - 生成 PRD 文档模板 `docs/requirements/PRD.md`
 - 在 `.claude/settings.local.json` 中记录项目名和角色
 
-### 1.3 同步模板（可选）
+### 1.3 CLAUDE.md 架构描述
+
+初始化时会检查项目 CLAUDE.md 是否包含架构信息。如果缺失，引导你选择预置模板：
+
+```
+📋 选择项目类型，生成 CLAUDE.md 建议片段：
+
+  1. Go 后端（Gin + GORM 分层架构）
+  2. Java 后端（Spring Boot 分层架构）
+  3. 前端项目（React/Vue + TypeScript）
+  4. 自定义（生成空白模板，手动填写）
+  5. 跳过
+```
+
+选择后会将架构片段追加到项目 CLAUDE.md，包含技术栈、分层架构表、开发规范、测试规范等。
+`/req:dev` 和 `/req:test` 依赖这些信息来生成实现方案和定位测试文件。
+
+> **后续修改**：直接编辑项目 CLAUDE.md 的「项目架构」章节即可。
+
+### 1.4 配置分支策略（可选）
+
+```
+/req:branch init
+```
+
+选择团队的分支管理策略：
+- **GitHub Flow**（推荐）：所有分支从 main 拉，合回 main
+- **Git Flow**：功能分支从 develop 拉，合回 develop
+- **Trunk-Based**：短期分支，主干开发
+
+配置后 `/req:dev`、`/req:commit`、`/req:done` 会自动遵循策略。不配置也能用，使用默认行为。
+
+### 1.5 重新初始化
+
+已有项目补充缺失文件（不覆盖已有内容）：
+
+```
+/req:init my-saas --reinit
+```
+
+用途：
+- 插件更新后补充新增的模板文件
+- 补充缺失的目录结构（如 modules/、templates/）
+- 重新引导 CLAUDE.md 架构描述
+- 恢复被误删的 PRD.md 或模块文档
+
+### 1.6 缓存重建
+
+全局缓存损坏或丢失时，从本地存储重建：
+
+```
+/req:cache rebuild
+```
+
+其他缓存操作：
+
+```
+/req:cache info          # 查看缓存状态
+/req:cache clear         # 清理当前项目缓存
+/req:cache clear-all     # 清理所有项目缓存
+/req:cache export        # 导出缓存数据
+```
+
+### 1.7 同步模板（可选）
 
 如果插件更新了模板，可以同步最新版：
 
@@ -126,17 +189,18 @@ AI 会分析粒度并建议拆分方案（只读，不创建文档）。
     ↓
 分支管理（自动创建 feat/REQ-001-user-points-rule）
     ↓
+读取 CLAUDE.md 项目架构（分层顺序、目录结构）
+    ↓
 加载需求上下文（章节一~六）
     ↓
 生成实现方案（Plan Mode）
     ├── 10.1 数据模型
-    ├── 10.2 文件改动清单
-    └── 10.3 实现步骤
+    ├── 10.2 文件改动清单（按 CLAUDE.md 分层架构列出）
+    └── 10.3 实现步骤（按 CLAUDE.md 分层顺序拆解）
     ↓
 确认方案 → 状态改为「开发中」
     ↓
-按分层架构逐步实现
-    Model → Store → Biz → Controller → Router
+按 CLAUDE.md 分层架构逐步实现
 ```
 
 ### 4.2 分支管理
@@ -144,18 +208,29 @@ AI 会分析粒度并建议拆分方案（只读，不创建文档）。
 首次执行 `/req:dev` 时，AI 自动：
 
 1. 检查工作区是否干净（有未提交改动会终止）
-2. 从需求标题生成英文分支名，供你确认：
+2. 读取分支策略配置（如已配置 `/req:branch init`）
+3. 从需求标题生成英文分支名，供你确认：
    ```
    将创建开发分支：feat/REQ-001-user-points-rule
-   基于分支：main
+   基于分支：main（来源：branchStrategy.branchFrom）
    ```
-3. 确认后创建分支并写入需求文档的 `branch` 字段
+4. 确认后创建分支并写入需求文档的 `branch` 字段
 
 再次执行 `/req:dev` 时，直接切换到已记录的分支。
 
-分支命名规则：
+分支命名规则（前缀可通过策略配置自定义）：
 - REQ → `feat/REQ-XXX-<english-slug>`
 - QUICK → `fix/QUICK-XXX-<english-slug>`
+- 紧急修复 → `hotfix/<english-slug>`（通过 `/req:branch hotfix` 创建）
+
+### 4.2.1 分支策略命令
+
+```
+/req:branch              # 查看当前策略和分支状态
+/req:branch init         # 交互式配置分支策略
+/req:branch status       # 查看策略配置和各需求分支状态
+/req:branch hotfix 描述  # 从主分支创建紧急修复分支
+```
 
 ### 4.3 继续开发
 
@@ -388,3 +463,8 @@ QUICK 做到一半发现范围变大，可以升级为正式需求：
 | 完成归档 | `/req:done` |
 | 查看 PRD | `/req:prd` |
 | 生成 Changelog | `/req:changelog v1.0.0` |
+| 配置分支策略 | `/req:branch init` |
+| 查看分支状态 | `/req:branch status` |
+| 紧急修复 | `/req:branch hotfix 描述` |
+| 重新初始化 | `/req:init my-project --reinit` |
+| 缓存重建 | `/req:cache rebuild` |
