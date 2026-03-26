@@ -144,7 +144,7 @@ $REQ_COMPLETED/REQ-001-部门渠道关联.md
 
 ### 8. 分支合并提醒
 
-> 读取 `.claude/settings.local.json` 的 `branchStrategy`，根据策略生成合并建议。
+> 读取 `.claude/settings.local.json` 的 `branchStrategy`，根据策略和仓库类型生成合并建议。
 
 ```python
 strategy = read_settings("branchStrategy")
@@ -158,13 +158,88 @@ else:
         merge_target = strategy["mergeTarget"]
         delete_after = strategy.get("deleteBranchAfterMerge", True)
         model = strategy["model"]
+        repo_type = strategy.get("repoType", "other")
+        gitea_url = strategy.get("giteaUrl")
     else:
         merge_target = detect_main_branch()
         delete_after = True
         model = None
+        repo_type = "other"
 ```
 
-**输出格式：**
+#### 根据仓库类型决定合并方式
+
+**repoType = "gitea"** → 自动创建 Gitea PR：
+
+```
+🔀 正在创建 Pull Request ...
+
+  分支：feat/REQ-001-user-points → main
+  标题：feat(REQ-001): 用户积分规则管理
+```
+
+通过 Gitea REST API 创建 PR：
+
+```bash
+# 从 git remote 解析 owner/repo
+REMOTE_URL=$(git remote get-url origin)
+# 支持 SSH 和 HTTPS 格式解析
+
+# 先推送分支到远程
+git push -u origin <branch>
+
+# 调用 Gitea API 创建 PR
+curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls" \
+  -H "Authorization: token ${GITEA_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "feat(REQ-001): 用户积分规则管理",
+    "body": "## 需求\n- 编号：REQ-001\n- 标题：用户积分规则管理\n\n## 变更内容\n[从需求文档提取功能清单]",
+    "head": "<branch>",
+    "base": "<merge_target>"
+  }'
+```
+
+成功后输出：
+```
+✅ PR 已创建！
+
+  🔗 ${GITEA_URL}/${OWNER}/${REPO}/pulls/<pr_number>
+  📋 标题：feat(REQ-001): 用户积分规则管理
+  🎯 合并方向：feat/REQ-001-user-points → main
+
+💡 后续操作：
+- 在 Gitea 上进行 Code Review
+- Review 通过后合并 PR
+```
+
+失败时回退到手动模式（输出合并命令）。
+
+**GITEA_TOKEN 缺失时**：
+```
+⚠️ 未配置 GITEA_TOKEN 环境变量，无法自动创建 PR
+
+  💡 设置方式：
+  export GITEA_TOKEN=<your-token>
+  # 或在 .env 中添加 GITEA_TOKEN=<your-token>
+
+  手动创建 PR：
+  ${GITEA_URL}/${OWNER}/${REPO}/compare/${merge_target}...<branch>
+```
+
+**repoType = "github"** → 提示使用 gh CLI：
+
+```
+🔀 分支合并提醒：
+
+  分支：feat/REQ-001-user-points → main
+
+  推送并创建 PR：
+  git push -u origin feat/REQ-001-user-points
+  gh pr create --title "feat(REQ-001): 用户积分规则管理" --base main
+```
+
+**repoType = "other"** → 仅展示合并命令：
 
 ```
 🔀 分支合并提醒：
@@ -179,9 +254,14 @@ else:
   git branch -d feat/REQ-001-user-points
 ```
 
-**Git Flow 额外提醒**（当 `model == "git-flow"`）：
+#### Git Flow 额外提醒
 
-如果需求分支是 hotfix，需要合并到两个分支：
+当 `model == "git-flow"` 且分支是 hotfix 时，需要合并到两个分支。
+
+**Gitea**：创建两个 PR（hotfix → main，hotfix → develop）
+**GitHub**：提示创建两个 `gh pr create`
+**Other**：展示两组合并命令
+
 ```
 🔀 分支合并提醒（Git Flow）：
 

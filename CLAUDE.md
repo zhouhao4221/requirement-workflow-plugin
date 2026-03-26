@@ -163,14 +163,23 @@ plugins/
 - 紧急修复 → `<hotfixPrefix><slug>`（默认 `hotfix/`）
 - slug：需求标题的英文翻译，lowercase kebab-case，最多 5 词
 
-**策略配置**：存储在 `.claude/settings.local.json` 的 `branchStrategy` 字段，包含 `model`、`mainBranch`、`developBranch`、`branchFrom`、`mergeTarget` 等。
+**策略配置**：存储在 `.claude/settings.local.json` 的 `branchStrategy` 字段，包含 `model`、`repoType`、`mainBranch`、`developBranch`、`branchFrom`、`mergeTarget` 等。
+
+**仓库托管类型**（`repoType` 字段）：
+| 类型 | 说明 | PR 集成 |
+|------|------|--------|
+| `github` | GitHub 托管 | 提示 `gh pr create` |
+| `gitea` | Gitea 自托管 | 自动调用 Gitea API 创建 PR |
+| `other` | 其他平台 | 仅展示合并命令 |
+
+Gitea 集成需要：`giteaUrl`（实例地址）+ `GITEA_TOKEN` 环境变量。
 
 **分支字段**：需求文档元信息中的 `branch` 字段记录分支名，确保跨会话确定性。
 
 **与命令的联动**：
 - `/req:dev`：根据 `branchFrom` 创建分支，使用配置的前缀
 - `/req:commit`：检查当前分支合规性，在主分支上提交时警告
-- `/req:done`：根据 `mergeTarget` 提示合并目标，Git Flow 的 hotfix 提示合并到 main + develop
+- `/req:done`：根据 `repoType` 自动创建 PR（Gitea）或提示合并命令
 - `/req:branch hotfix`：始终从主分支创建紧急修复分支
 - 仅 `primary` 仓库执行分支操作，`readonly` 跳过
 - 工作区有未提交改动时拒绝操作
