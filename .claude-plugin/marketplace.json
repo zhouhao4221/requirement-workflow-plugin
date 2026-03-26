@@ -20,6 +20,12 @@
       "description": "前端 API 对接工具 - Swagger 解析、字段映射、代码生成",
       "source": "./plugins/api/",
       "category": "development"
+    },
+    {
+      "name": "pm",
+      "description": "项目管理助手 - 汇报、统计、方案等项目管理内容生成",
+      "source": "./plugins/pm/",
+      "category": "management"
     }
   ]
 }

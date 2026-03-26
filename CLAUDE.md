@@ -20,11 +20,16 @@ plugins/
 │   ├── hooks/hooks.json            # 工具拦截的事件钩子
 │   ├── scripts/                    # 验证和工具脚本
 │   └── templates/                  # 需求文档模板
-└── api/                            # API 对接插件
+├── api/                            # API 对接插件
+│   ├── .claude-plugin/plugin.json  # 插件清单
+│   ├── commands/                   # 命令定义
+│   ├── skills/                     # 自动触发技能
+│   └── scripts/                    # Python 解析脚本
+└── pm/                             # 项目管理助手插件
     ├── .claude-plugin/plugin.json  # 插件清单
-    ├── commands/                   # 命令定义
+    ├── commands/                   # 命令定义（汇报/统计/方案等）
     ├── skills/                     # 自动触发技能
-    └── scripts/                    # Python 解析脚本
+    └── scripts/                    # Git 统计采集脚本
 ```
 
 ### 存储架构（本地优先 + 缓存同步）
@@ -356,3 +361,80 @@ REQ-002 用户积分-前端    类型=前端  关联=REQ-001
 `/req:init` 命令会检查项目 CLAUDE.md 是否包含架构信息，缺失时引导用户选择预置模板（Go/Java/前端/通用）追加到 CLAUDE.md。
 
 预置模板存放在 `templates/claude-md-snippets/` 目录。
+
+---
+
+## pm 插件 - 项目管理助手
+
+### 插件定位
+
+pm 插件是 req 插件产出数据的**只读消费者**，从 PRD、需求文档和 Git 记录中提取项目数据，按不同场景和受众生成汇报、统计、方案等项目管理内容。
+
+### 与 req 插件的关系
+
+- **只读不写**：pm 不修改需求文档，不触发 req 的缓存同步 Hook
+- **复用存储路径**：遵循 req 的 `docs/requirements/` 和全局缓存路径约定
+- **支持所有角色**：`primary` 和 `readonly` 仓库均可使用
+- **无需 req 即可工作**：没有需求数据时仍可使用 Git 统计和自由提问功能
+
+### 数据来源
+
+| 数据源 | 提取内容 |
+|--------|---------|
+| `PRD.md` | 产品愿景、功能规划、技术选型 |
+| `active/*.md` | 进行中需求的状态、进度、阻塞项 |
+| `completed/*.md` | 已完成需求、完成时间线 |
+| `modules/*.md` | 模块职责和需求分布 |
+| `INDEX.md` | 需求总览 |
+| `git log` | 提交记录、贡献者、分支活动 |
+| `git diff --stat` | 代码变更量统计 |
+| `git tag` | 版本里程碑 |
+
+### 命令一览
+
+**概览**：
+- `/pm` - 项目概况仪表盘
+
+**汇报类**：
+- `/pm:weekly [--from] [--to]` - 周报
+- `/pm:monthly [--month=YYYY-MM]` - 月报
+- `/pm:milestone <版本号>` - 里程碑/版本总结
+
+**统计类**：
+- `/pm:stats [--from] [--to]` - 多维度数据统计
+- `/pm:progress` - 项目总进度（甘特视图）
+
+**方案类**：
+- `/pm:plan <主题>` - 生成方案文档（排期/技术/资源）
+- `/pm:brief [--lang=zh|en]` - 项目简介
+
+**风险类**：
+- `/pm:risk` - 风险扫描（延期/阻塞/异常检测）
+
+**会议类**：
+- `/pm:standup` - 站会摘要（昨天/今天/阻塞）
+
+**通用**：
+- `/pm:ask <问题>` - 基于项目数据自由提问
+- `/pm:export <命令>` - 导出内容到 docs/reports/
+- `/pm:help` - 使用帮助
+
+### 输出保存
+
+所有生成内容均可选择保存到 `docs/reports/` 目录：
+
+```
+docs/reports/
+├── weekly/              # 周报
+├── monthly/             # 月报
+├── milestone/           # 里程碑报告
+├── stats/               # 统计报告
+├── progress/            # 进度报告
+├── plans/               # 方案文档
+├── risk/                # 风险报告
+└── custom/              # 自定义内容
+```
+
+### 技能
+
+- `report-generator` - 汇报生成助手，在执行生成类命令时触发，负责数据整合和受众适配
