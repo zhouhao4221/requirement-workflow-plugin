@@ -291,7 +291,7 @@ AI 会分析粒度并建议拆分方案（只读，不创建文档）。
 ```
 
 根据 `/req:branch init` 配置的仓库类型：
-- **Gitea**：自动调用 Gitea REST API 创建 PR（需配置 `GITEA_TOKEN`，见 1.8）
+- **Gitea**：自动调用 Gitea REST API 创建 PR（需配置 `giteaToken`，见 1.8）
 - **GitHub**：调用 `gh` CLI 创建 PR
 - **其他**：推送分支到远程，展示合并命令
 

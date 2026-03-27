@@ -215,9 +215,9 @@ curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls" \
 
 失败时回退到手动模式（输出合并命令）。
 
-**GITEA_TOKEN 缺失时**：
+**giteaToken 缺失时**：
 ```
-⚠️ GITEA_TOKEN 未配置。无法通过 API 自动创建 PR。
+⚠️ giteaToken 未配置。无法通过 API 自动创建 PR。
 
   💡 设置方式：在 .claude/settings.local.json 的 branchStrategy 中配置 giteaToken：
   "giteaToken": "<your-token>"
