@@ -23,7 +23,77 @@ description: 规范提交 - 生成 Conventional Commits 格式的 Git 提交
 
 ## 执行流程
 
-### 1. 检查工作区状态
+> **⚠️ 重要：步骤 1（分支检查）必须最先执行，在任何 git add / git commit 之前完成。**
+
+### 1. 🔀 分支保护检查（最高优先级，第一步执行）
+
+**本步骤必须在 git add 之前执行。** 读取 `.claude/settings.local.json` 的 `branchStrategy`，未配置时跳过本步骤。
+
+**执行动作：**
+
+1. 读取当前分支：`git branch --show-current`
+2. 读取策略配置中的 `mainBranch`、`developBranch`、`branchFrom`
+3. **判断当前分支是否为保护分支**：
+
+| 条件 | 是否保护分支 |
+|------|------------|
+| 当前分支 == `mainBranch`（如 `main`、`master`） | **是** |
+| 当前分支 == `developBranch`（如 `develop`） | **是** |
+| 其他分支（`feat/*`、`fix/*`、`hotfix/*` 等） | 否，跳到步骤 2 |
+
+4. **如果在保护分支上**，扫描活跃需求（状态为「开发中」或「测试中」）：
+
+   - **无活跃需求** → 跳到步骤 2，正常提交
+   - **有 1 个活跃需求** → 自动执行分支切换（见下方）
+   - **有多个活跃需求** → 展示列表让用户选择：
+     ```
+     🔀 当前在保护分支 <current_branch>，检测到活跃需求：
+
+       1. REQ-001 用户积分规则管理
+       2. REQ-002 订单状态流转
+       3. 跳过，继续在 <current_branch> 提交
+
+     请选择：
+     ```
+
+5. **切换/创建分支**（用户选择需求后，或只有一个活跃需求时自动执行）：
+
+   **需求已有 branch 字段（非空且非 `-`）→ 切换到已有分支：**
+   ```bash
+   git stash
+   git checkout <req.branch>
+   git stash pop
+   ```
+   输出：`🔀 已从 <current_branch> 切换到 <req.branch>`
+
+   **需求无 branch 字段（为 `-` 或缺失）→ 创建新分支：**
+   ```bash
+   # 分支命名：<prefix><REQ-ID>-<english-slug>
+   # 例：feat/REQ-001-user-points、fix/QUICK-003-login-error
+   git stash
+   git checkout -b <new_branch> <branchFrom>
+   git stash pop
+   # 更新需求文档的 branch 字段为 <new_branch>
+   ```
+   输出：`🔀 已从 <current_branch> 创建并切换到 <new_branch>`
+
+**各场景行为总结：**
+
+| 当前分支 | 有活跃需求 | 行为 |
+|---------|-----------|------|
+| `main`（mainBranch） | 1个，已有需求分支 | 🔀 stash → 切换到需求分支 → stash pop |
+| `main`（mainBranch） | 1个，无需求分支 | 🔀 stash → 创建需求分支 → stash pop |
+| `main`（mainBranch） | 多个 | 让用户选择需求或跳过 |
+| `main`（mainBranch） | 无 | 正常继续 |
+| `develop`（developBranch） | 1个，已有需求分支 | 🔀 stash → 切换到需求分支 → stash pop |
+| `develop`（developBranch） | 1个，无需求分支 | 🔀 stash → 创建需求分支 → stash pop |
+| `develop`（developBranch） | 多个 | 让用户选择需求或跳过 |
+| `develop`（developBranch） | 无 | 正常继续 |
+| hotfix/* 分支 | — | 正常继续，自动建议「修复」类型 |
+| feat/REQ-XXX-* | — | 正常继续，自动关联对应 REQ |
+| fix/QUICK-XXX-* | — | 正常继续，自动关联对应 QUICK |
+
+### 2. 检查工作区状态
 
 ```bash
 git status --short
@@ -50,109 +120,6 @@ git diff --cached --stat
   M  internal/sys/router.go
 ```
 
-### 2. 分支合规检查（自动切换/创建分支）
-
-> 读取 `.claude/settings.local.json` 的 `branchStrategy`，未配置时跳过此步骤。
-
-**⚠️ 此步骤为强制执行，不可跳过。在保护分支上直接提交需求代码是错误的。**
-
-#### 步骤 2.1：读取配置和当前分支
-
-```bash
-# 读取分支策略
-strategy = .claude/settings.local.json → branchStrategy
-current_branch = git branch --show-current
-
-# 从策略中提取保护分支列表
-main_branch = strategy.mainBranch          # 如 "main"
-develop_branch = strategy.developBranch    # 如 "develop"（git-flow），可能为 null
-branch_from = strategy.branchFrom          # 如 "develop"（git-flow）或 "main"
-```
-
-#### 步骤 2.2：判断是否在保护分支上
-
-**保护分支**是指 `mainBranch` 和 `developBranch`（如果配置了的话）。
-
-判断规则：
-- 当前分支 == `mainBranch`（如 `main`）→ **是保护分支**
-- 当前分支 == `developBranch`（如 `develop`）→ **是保护分支**
-- 其他分支 → 不是保护分支，跳到步骤 2.5
-
-**如果不在保护分支上，直接跳到步骤 2.5。**
-
-#### 步骤 2.3：在保护分支上 → 检测活跃需求
-
-扫描活跃需求目录，查找状态为「开发中」或「测试中」的需求文档。
-
-**无活跃需求** → 正常提交，跳到步骤 3（文档、配置等非需求变更）。
-
-**有活跃需求** → **必须切换到需求分支，禁止在保护分支直接提交**。继续步骤 2.4。
-
-#### 步骤 2.4：自动切换/创建需求分支
-
-**单个活跃需求** → 自动处理该需求。
-**多个活跃需求** → 展示列表让用户选择：
-
-```
-🔀 当前在保护分支 <current_branch>，检测到活跃需求：
-
-  1. REQ-001 用户积分规则管理
-  2. REQ-002 订单状态流转
-  3. 跳过，继续在 <current_branch> 提交
-
-请选择需求编号：
-```
-
-用户选择需求后，**根据需求的 branch 字段决定操作**：
-
-**情况 A：需求已有分支**（branch 字段非空且非 `-`）
-```
-🔀 当前在 <current_branch>，切换到需求分支：<req.branch>
-
-执行：
-1. git stash                        # 暂存当前变更
-2. git checkout <req.branch>        # 切换到需求分支
-3. git stash pop                    # 恢复变更
-```
-
-**情况 B：需求无分支**（branch 字段为 `-` 或缺失）
-```
-🔀 当前在 <current_branch>，创建需求分支：<new_branch>
-
-分支命名：
-- REQ-XXX → <featurePrefix>REQ-XXX-<english-slug>（如 feat/REQ-001-user-points）
-- QUICK-XXX → <fixPrefix>QUICK-XXX-<english-slug>（如 fix/QUICK-003-login-error）
-
-执行：
-1. git stash                                    # 暂存当前变更
-2. git checkout -b <new_branch> <branchFrom>    # 从 branchFrom 创建新分支
-3. git stash pop                                # 恢复变更
-4. 更新需求文档的 branch 字段为 <new_branch>
-```
-
-#### 步骤 2.5：非保护分支的处理
-
-- **hotfix/* 分支** → 正常提交，自动建议「修复」类型
-- **feat/REQ-XXX-* 或 fix/QUICK-XXX-* 分支** → 正常提交，从分支名自动关联需求编号
-
----
-
-**各场景行为总结：**
-
-| 当前分支 | 有活跃需求 | 行为 |
-|---------|-----------|------|
-| `main`（mainBranch） | 1个，已有需求分支 | 🔀 stash → 切换到需求分支 → stash pop → 提交 |
-| `main`（mainBranch） | 1个，无需求分支 | 🔀 stash → 创建需求分支 → stash pop → 提交 |
-| `main`（mainBranch） | 多个 | 让用户选择需求或跳过 |
-| `main`（mainBranch） | 无 | 正常提交（文档、配置等非需求变更） |
-| `develop`（developBranch） | 1个，已有需求分支 | 🔀 stash → 切换到需求分支 → stash pop → 提交 |
-| `develop`（developBranch） | 1个，无需求分支 | 🔀 stash → 创建需求分支 → stash pop → 提交 |
-| `develop`（developBranch） | 多个 | 让用户选择需求或跳过 |
-| `develop`（developBranch） | 无 | 正常提交 |
-| hotfix/* 分支 | — | 正常提交，自动建议「修复」类型 |
-| feat/REQ-XXX-* | — | 正常提交，自动关联对应 REQ |
-| fix/QUICK-XXX-* | — | 正常提交，自动关联对应 QUICK |
-
 ### 3. Code Review 提醒
 
 提交前展示代码审查提醒（信息展示，不等待回复）：
@@ -162,9 +129,9 @@ branch_from = strategy.branchFrom          # 如 "develop"（git-flow）或 "mai
    检查要点：逻辑正确性、安全隐患、错误处理、代码规范、调试代码清理
 ```
 
-### 4.5 检测当前需求
+### 4. 检测当前需求
 
-**优先从分支名匹配**（步骤 2 已获取当前分支信息）：
+**优先从分支名匹配**（步骤 1 已获取当前分支信息）：
 
 ```python
 current_branch = git("branch --show-current")
