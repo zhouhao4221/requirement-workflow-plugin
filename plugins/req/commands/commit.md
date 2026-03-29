@@ -267,8 +267,8 @@ git commit -m "新功能: 实现部门渠道关联 (REQ-001)"
 💡 后续操作：
 - 继续开发：/req:dev
 - 再次提交：/req:commit
-- 推送远程：git push
-- 生成版本说明：/req:changelog <version>
+- 创建 PR：/req:pr
+- 审查代码：/req:review-pr review
 ```
 
 ---

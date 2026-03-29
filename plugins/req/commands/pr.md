@@ -166,9 +166,9 @@ curl -s "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls?state=open&head=${OWNE
   🎯 合并方向：feat/REQ-001-user-points → main
 
 💡 后续操作：
-- 在 Gitea 上进行 Code Review
-- Review 通过后合并 PR
-- /req:done 完成需求归档
+- /req:review-pr review   AI 代码审查
+- /req:review-pr merge    审查通过后合并 PR
+- /req:done               归档需求
 ```
 
 然后进入「步骤 8. 分支清理提示」。

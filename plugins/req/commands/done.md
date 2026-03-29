@@ -209,8 +209,8 @@ curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls" \
   🎯 合并方向：feat/REQ-001-user-points → main
 
 💡 后续操作：
-- 在 Gitea 上进行 Code Review
-- Review 通过后合并 PR
+- /req:review-pr review   AI 代码审查
+- /req:review-pr merge    审查通过后合并 PR
 ```
 
 失败时回退到手动模式（输出合并命令）。
