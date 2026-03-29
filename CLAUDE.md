@@ -108,6 +108,9 @@ plugins/
 - `/req:branch status` - 查看策略配置和各需求分支状态
 - `/req:branch hotfix [描述]` - 从主分支创建紧急修复分支
 - `/req:pr [REQ-XXX]` - 创建 PR，根据仓库类型自动调用 Gitea API / gh CLI（readonly 可用）
+- `/req:review-pr` - 查看 PR 状态
+- `/req:review-pr review` - AI 代码审查，提交评论到 Gitea/GitHub
+- `/req:review-pr merge` - 合并 PR，自动清理分支
 
 **版本管理命令：**
 - `/req:commit [消息]` - 规范提交，自动关联需求编号，检查分支合规性（readonly 可用）

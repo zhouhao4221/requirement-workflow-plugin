@@ -253,6 +253,7 @@ PreToolUse Hook 在以下操作执行前自动弹出原生确认对话框：
     "hotfixPrefix": "hotfix/",    // 紧急修复前缀
     "branchFrom": "main",         // 功能/修复分支的拉取基准
     "mergeTarget": "main",        // 默认合并目标
+    "mergeMethod": "merge",       // 合并方式：merge | squash | rebase
     "deleteBranchAfterMerge": true
   }
 }

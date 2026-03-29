@@ -1,0 +1,348 @@
+---
+description: PR 审查与合并 - AI 代码审查、提交评论、合并 PR
+---
+
+# PR 审查与合并
+
+对已创建的 PR 进行 AI 代码审查，可将审查意见提交到平台（Gitea/GitHub），审查通过后合并 PR。
+
+> 此命令**不受仓库角色限制**，readonly 仓库也可执行。
+> 不触发缓存同步。
+
+## 命令格式
+
+```
+/req:review-pr [子命令] [REQ-XXX]
+```
+
+## 子命令
+
+| 子命令 | 说明 | 示例 |
+|--------|------|------|
+| (空) | 查看 PR 状态 | `/req:review-pr` |
+| `review` | AI 代码审查 | `/req:review-pr review` |
+| `merge` | 合并 PR | `/req:review-pr merge` |
+
+- 省略编号时从当前分支自动匹配需求
+- 未指定子命令时展示 PR 状态概览
+
+---
+
+## 前置条件
+
+本命令依赖 `/req:pr` 已创建的 PR。如果需求没有关联的 PR：
+
+```
+❌ 未找到关联的 PR
+
+💡 请先创建 PR：/req:pr [REQ-XXX]
+```
+
+---
+
+## 执行流程（查看状态）
+
+### 1. 识别需求和 PR
+
+**指定编号** → 读取该需求文档
+**未指定** → 从当前分支名匹配需求编号（`REQ-\d+` 或 `QUICK-\d+`）
+
+### 2. 查询 PR 信息
+
+根据 `repoType` 查询 PR：
+
+**Gitea**：
+```bash
+# 从需求的 branch 字段获取分支名，查询关联的 open PR
+curl -s "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls?state=open&head=${OWNER}:${branch}" \
+  -H "Authorization: token ${TOKEN}"
+```
+
+**GitHub**：
+```bash
+gh pr list --head <branch> --json number,title,state,reviews,mergeable,url
+```
+
+### 3. 展示状态
+
+```
+📋 PR 状态：REQ-001 用户积分规则管理
+
+  🔗 PR #42: feat(REQ-001): 用户积分规则管理
+  📊 状态：Open
+  🎯 合并方向：feat/REQ-001-user-points → develop
+  🔀 可合并：✅ 无冲突 / ❌ 有冲突
+  📝 审查：未审查 / ✅ 已通过 / ❌ 需修改
+
+💡 可用操作：
+- /req:review-pr review   AI 代码审查
+- /req:review-pr merge    合并 PR
+```
+
+---
+
+## 执行流程（review - AI 代码审查）
+
+### 1. 获取 PR diff
+
+**Gitea**：
+```bash
+curl -s "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}.diff" \
+  -H "Authorization: token ${TOKEN}"
+```
+
+**GitHub**：
+```bash
+gh pr diff ${PR_NUMBER}
+```
+
+### 2. 读取审查规范
+
+按优先级读取审查依据：
+1. 项目 CLAUDE.md 中的**开发规范**章节（错误处理、日志、API 风格等）
+2. 项目 CLAUDE.md 中的**测试规范**章节
+3. 需求文档中的**功能清单**和**业务规则**（验证实现是否匹配需求）
+
+### 3. AI 逐文件审查
+
+对 diff 中每个变更文件进行审查，检查维度：
+
+| 维度 | 检查内容 |
+|------|---------|
+| 正确性 | 逻辑是否正确，边界条件是否处理 |
+| 安全性 | SQL 注入、XSS、敏感信息泄露、权限校验 |
+| 错误处理 | 异常是否捕获，错误是否正确返回 |
+| 命名规范 | 变量/函数/文件命名是否符合项目规范 |
+| 代码风格 | 是否符合项目 CLAUDE.md 中的编码规范 |
+| 需求匹配 | 实现是否覆盖需求文档中的功能清单 |
+| 测试覆盖 | 关键逻辑是否有测试，测试是否充分 |
+
+### 4. 输出审查报告
+
+问题分三级：
+
+| 级别 | 含义 | 影响 |
+|------|------|------|
+| 🔴 阻塞 | 必须修复才能合并 | 阻止合并 |
+| 🟡 建议 | 建议修改但不阻止合并 | 不阻止 |
+| 🔵 信息 | 知识分享、风格偏好 | 不阻止 |
+
+输出格式：
+
+```
+📝 AI 代码审查报告：PR #42
+
+  审查文件：8 个
+  审查结果：🔴 1 个阻塞 | 🟡 3 个建议 | 🔵 2 个信息
+
+---
+
+🔴 阻塞问题：
+
+  📄 internal/user/biz/points.go:45
+  问题：积分扣减未检查余额是否充足，可能导致负数
+  建议：添加余额校验 `if user.Points < amount { return ErrInsufficientPoints }`
+
+---
+
+🟡 建议：
+
+  📄 internal/user/controller/v1/points.go:23
+  问题：缺少请求参数校验
+  建议：对 amount 字段添加 min=1 校验
+
+  📄 internal/user/store/points_store.go:67
+  问题：批量操作未使用事务
+  建议：用 db.Transaction() 包裹
+
+  📄 internal/user/model/points_record.go:12
+  问题：CreatedAt 字段缺少 json tag
+  建议：添加 `json:"created_at"`
+
+---
+
+🔵 信息：
+
+  📄 internal/user/biz/points.go:20
+  备注：可以考虑将积分规则抽为配置，方便后续调整
+
+  📄 internal/user/router.go:34
+  备注：路由分组命名建议统一为 /api/v1/points（当前为 /api/v1/point）
+
+---
+
+📊 总结：有 1 个阻塞问题需修复后才能合并
+
+💡 可用操作：
+- 修复后重新提交：/req:commit
+- 修复后重新审查：/req:review-pr review
+- 无阻塞后合并：/req:review-pr merge
+```
+
+### 5. 提交审查评论到平台
+
+审查完成后，**将报告摘要作为 PR 评论提交**到 Gitea/GitHub，团队成员在网页上可见。
+
+**Gitea**：
+```bash
+curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/issues/${PR_NUMBER}/comments" \
+  -H "Authorization: token ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "body": "<审查报告 Markdown 格式>"
+  }'
+```
+
+**GitHub**：
+```bash
+gh pr review ${PR_NUMBER} --comment --body "<审查报告 Markdown 格式>"
+```
+
+**repoType = "other"**：仅本地展示，不提交评论。
+
+提交成功后：
+```
+✅ 审查报告已提交到 PR #42
+   🔗 ${PR_URL}
+```
+
+---
+
+## 执行流程（merge - 合并 PR）
+
+### 1. 前置检查
+
+依次检查以下条件：
+
+| 检查项 | 失败时行为 |
+|--------|-----------|
+| PR 是否存在 | ❌ 提示先创建 PR |
+| PR 是否 Open 状态 | ❌ 提示 PR 已关闭/已合并 |
+| 是否有合并冲突 | ❌ 提示解决冲突后重试 |
+
+```
+❌ PR #42 存在合并冲突
+
+💡 解决方式：
+  git checkout <branch>
+  git merge <merge_target>
+  # 解决冲突后
+  git add . && git commit
+  git push
+```
+
+### 2. 执行合并
+
+读取 `branchStrategy.mergeMethod` 配置（默认 `merge`）：
+
+| 值 | 说明 | 适用场景 |
+|------|------|---------|
+| `merge` | 保留完整提交历史 | 默认，适合大多数团队 |
+| `squash` | 压缩为一个提交 | 希望主分支历史简洁 |
+| `rebase` | 变基到目标分支 | 追求线性历史 |
+
+**Gitea**：
+```bash
+curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/merge" \
+  -H "Authorization: token ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Do": "<mergeMethod>",
+    "merge_message_field": "<merge commit message>"
+  }'
+```
+
+`Do` 字段映射：`merge` → `"merge"`, `squash` → `"squash"`, `rebase` → `"rebase"`
+
+**GitHub**：
+```bash
+gh pr merge ${PR_NUMBER} --<mergeMethod>
+# --merge / --squash / --rebase
+```
+
+**repoType = "other"**：
+```
+🔀 请手动合并 PR
+
+  合并命令：
+  git checkout <merge_target>
+  git merge <branch>
+  git push
+```
+
+### 3. 合并成功
+
+```
+✅ PR #42 已合并！
+
+  🔗 ${PR_URL}
+  🎯 feat/REQ-001-user-points → develop
+  📋 合并方式：merge
+
+💡 后续操作：
+- /req:done REQ-001   归档需求
+```
+
+### 4. 分支清理
+
+合并成功后，读取 `branchStrategy.deleteBranchAfterMerge` 配置（默认 `true`）。
+
+**配置为 true 或未配置时**：
+
+```
+🗑️ 是否删除已合并的分支？
+
+  将执行：
+  git checkout <merge_target>
+  git pull
+  git branch -d <branch>
+```
+
+等待用户确认：
+- 确认 → 执行切换、拉取最新、删除本地分支
+- 拒绝 → 保留分支
+
+**配置为 false 时**：不提示，跳过清理。
+
+---
+
+## Git Flow 双 PR 场景
+
+当策略为 `git-flow` 且分支是 hotfix 时，可能存在两个 PR（→ main + → develop）。
+
+此时分别展示/审查/合并两个 PR：
+
+```
+📋 Hotfix 关联 2 个 PR：
+
+  1. PR #42: hotfix/fix-order-calc → main     状态：Open
+  2. PR #43: hotfix/fix-order-calc → develop   状态：Open
+
+请选择操作的 PR（或输入 all 全部处理）：
+```
+
+合并时按顺序：先合并 → main，再合并 → develop。
+
+---
+
+## 与其他命令的衔接
+
+```
+/req:dev        开发完成后
+    ↓
+/req:commit     提交代码
+    ↓
+/req:pr         创建 PR
+    ↓
+/req:review-pr review   AI 审查代码 + 提交评论
+    ↓
+/req:review-pr merge    合并 PR + 清理分支
+    ↓
+/req:done       归档需求
+```
+
+---
+
+## 用户输入
+
+$ARGUMENTS
