@@ -104,63 +104,19 @@ AI 搜索代码库，定位相关文件：
 **等待用户确认**。用户可以：
 - 确认方案 → 进入步骤 3
 - 补充/调整 → AI 重新分析
-- 放弃 → 结束，不创建分支
+- 放弃 → 结束
 
-### 3. 创建分支
+### 3. 执行方案
 
-> **用户确认方案后**才创建分支，避免分析后放弃导致残留空分支。
-
-#### 3.1 工作区检查
-
-```bash
-git status --porcelain
-```
-
-有未提交改动时终止，提示先 commit 或 stash。
-
-#### 3.2 读取分支策略
-
-```python
-strategy = read_settings("branchStrategy")
-
-if strategy:
-    BRANCH_FROM = strategy.get("branchFrom", strategy["mainBranch"])
-    # 根据类型选前缀
-    if task_type in ["优化", "重构", "升级", "规范"]:
-        PREFIX = "improve/"
-    elif task_type == "小功能":
-        PREFIX = strategy.get("featurePrefix", "feat/")
-    elif task_type == "修复":
-        PREFIX = strategy.get("fixPrefix", "fix/")
-else:
-    BRANCH_FROM = detect_main_branch()
-    PREFIX = "improve/"
-```
-
-#### 3.3 创建分支
-
-AI 根据描述生成英文 slug（lowercase kebab-case，最多 5 词）：
-
-```
-🌿 创建分支：improve/optimize-order-query-cache
-   基于：develop（来源：branchStrategy.branchFrom）
-```
-
-```bash
-git fetch origin $BRANCH_FROM
-git checkout -b ${PREFIX}<slug> origin/$BRANCH_FROM
-```
-
-### 4. 执行方案
+**直接在当前分支上开发，不创建新分支、不检测分支策略。**
 
 AI 按确认的方案修改代码。
 
-### 5. 完成提示
+### 4. 完成提示
 
 ```
 ✅ 完成！
 
-🌿 分支：improve/optimize-order-query-cache
 📝 修改文件：
 - internal/order/store/order_store.go（+25 -3）
 - internal/order/biz/order_list.go（+40 -5）
@@ -169,7 +125,6 @@ AI 按确认的方案修改代码。
 💡 后续操作：
 - /req:commit       提交代码
 - /req:pr           创建 PR
-- /req:review-pr    审查并合并
 ```
 
 ---
