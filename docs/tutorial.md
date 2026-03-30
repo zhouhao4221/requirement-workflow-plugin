@@ -283,7 +283,7 @@ AI 会分析粒度并建议拆分方案（只读，不创建文档）。
 
 ### 4.2.2 创建 PR
 
-开发完成后，可以手动创建 PR：
+开发完成后，创建 PR：
 
 ```
 /req:pr              # 根据当前分支自动匹配需求，创建 PR
@@ -296,6 +296,47 @@ AI 会分析粒度并建议拆分方案（只读，不创建文档）。
 - **其他**：推送分支到远程，展示合并命令
 
 Git Flow 的 hotfix 分支会自动创建两个 PR（→ main + → develop）。
+
+### 4.2.3 PR 审查与合并
+
+PR 创建后，使用 AI 代码审查和合并：
+
+```
+/req:review-pr              # 查看 PR 状态
+/req:review-pr review       # AI 代码审查
+/req:review-pr merge        # 合并 PR
+```
+
+**审查流程：**
+1. AI 获取 PR diff，逐文件审查（正确性、安全性、规范、需求匹配）
+2. 问题分三级：🔴 阻塞（必须修复）、🟡 建议、🔵 信息
+3. 审查报告自动提交为 PR 评论（Gitea/GitHub 网页可见）
+4. 无阻塞问题 → 可执行 merge
+
+**合并方式：** 读取 `branchStrategy.mergeMethod` 配置（默认 `merge`），支持 `merge` / `squash` / `rebase`。
+
+### 4.2.4 智能开发（/req:do）
+
+对于优化、重构、升级等无需创建需求文档的任务，使用智能开发命令：
+
+```
+/req:do 优化订单查询性能
+/req:do 重构用户服务层
+/req:do 升级 Go 到 1.23
+/req:do 统一错误码格式
+```
+
+AI 自动：
+1. **分析意图** — 判断类型（优化/重构/升级/规范/小功能/修复）和规模
+2. **搜索代码** — 定位相关文件，生成修改方案
+3. **确认方案** — 用户确认后创建分支（`improve/`、`feat/`、`fix/` 按类型自动选择）
+4. **执行修改** — 按方案修改代码
+
+规模较大时会建议切换到 `/req:new-quick` 或 `/req:new`。
+
+**与 `/req:fix` 的区别：**
+- `/req:fix` — 专门修 bug，AI 会做根因分析
+- `/req:do` — 优化/重构/升级等非 bug 场景，AI 分析意图后选择合适流程
 
 ### 4.3 继续开发
 
@@ -471,6 +512,32 @@ QUICK 做到一半发现范围变大，可以升级为正式需求：
 - 可以基于已完成需求开发
 - 不能创建、编辑、变更需求状态
 
+### 11.1 规范文档共享
+
+主仓库可创建规范文档（数据类型定义、接口契约、错误码等），只读仓库可实时查阅：
+
+**主仓库（后端）：**
+
+```
+/req:specs new 订单数据类型        # 创建规范文档
+/req:specs edit order-types       # 编辑
+/req:specs                        # 列出所有规范
+```
+
+**只读仓库（前端）：**
+
+```
+/req:specs                        # 查看规范列表
+/req:specs show order-types       # 查看订单数据类型定义
+```
+
+规范文档存储在 `docs/requirements/specs/`，通过缓存自动同步。后端修改后，前端下次查看即为最新版本。
+
+典型用途：
+- 后端定义数据类型 → 前端查阅字段定义
+- 统一错误码规范 → 前后端各自实现
+- 接口契约约定 → 保证前后端一致
+
 ---
 
 ## 十二、完整流程图
@@ -498,6 +565,8 @@ QUICK 做到一半发现范围变大，可以升级为正式需求：
                ┌─────────────┐
                │  🔨 开发中   │ ← /req:commit 提交代码
                │             │ ← /req:pr 创建 PR
+               │             │ ← /req:review-pr review 审查
+               │             │ ← /req:review-pr merge 合并
                └──────┬──────┘
                       │ /req:test
                       ▼
@@ -521,12 +590,15 @@ QUICK 做到一半发现范围变大，可以升级为正式需求：
 | 创建正式需求 | `/req:new 标题 --type=后端` |
 | 创建小修复（有文档） | `/req:new-quick 标题` |
 | 轻量修复（无文档） | `/req:fix 问题描述` |
+| 智能开发（优化/重构） | `/req:do 描述` |
 | 编辑需求 | `/req:edit` |
 | 提交评审 | `/req:review` |
 | 通过评审 | `/req:review pass` |
 | 启动开发 | `/req:dev` |
 | 提交代码 | `/req:commit` |
 | 创建 PR | `/req:pr` |
+| AI 代码审查 | `/req:review-pr review` |
+| 合并 PR | `/req:review-pr merge` |
 | 运行测试 | `/req:test` |
 | 完成归档 | `/req:done` |
 | 查看 PRD | `/req:prd` |
@@ -536,3 +608,5 @@ QUICK 做到一半发现范围变大，可以升级为正式需求：
 | 紧急修复 | `/req:branch hotfix 描述` |
 | 重新初始化 | `/req:init my-project --reinit` |
 | 缓存重建 | `/req:cache rebuild` |
+| 查看规范文档 | `/req:specs show <名称>` |
+| 创建规范文档 | `/req:specs new <名称>` |
