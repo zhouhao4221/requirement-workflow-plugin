@@ -276,11 +276,9 @@ git commit -m "新功能: 实现部门渠道关联 (REQ-001)"
 
   4 files changed, 156 insertions(+), 3 deletions(-)
 
-💡 后续操作：
-- 继续开发：/req:dev
-- 再次提交：/req:commit
-- 创建 PR：/req:pr
-- 审查代码：/req:review-pr review
+💡 是否创建 PR？
+- /req:pr           创建 PR
+- 继续开发          稍后再说
 ```
 
 ---
