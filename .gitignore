@@ -10,6 +10,7 @@ Thumbs.db
 
 # Claude Code local
 .claude/settings.local.json
+.claude/aiforge.json
 .claude/projects/
 
 # Temp files
