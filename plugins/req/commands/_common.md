@@ -8,9 +8,14 @@
 
 **写入规则（强制）**：
 
-1. **唯一配置文件**：所有配置���`requirementProject`、`requirementRole`、`branchStrategy` 等）���须写入 `.claude/settings.local.json`，**禁止**创建独立配置文件（如 `branchStrategy.json`、`requirement-config.json` 等）
-2. **合并写入**：先读取已有 `settings.local.json` 内容，���并需要更新的字段后写回，**不得覆盖已有字段**
+1. **唯一配置文件**：所有配置（`requirementProject`、`requirementRole`、`branchStrategy` 等）必须写入 `.claude/settings.local.json`，**禁止**创建独立配置文件（如 `.claude/aiforge.json`、`branchStrategy.json`、`requirement-config.json` 等）。独立文件不会被 Claude Code 识别
+2. **合并写入**：先读取已有 `settings.local.json` 内容，合并需要更新的字段后写回，**不得覆盖已有字段**
 3. **目录检查**：`.claude/` 目录不存在时先创建
+4. **无写入权限的回退**：当 Write/Edit 工具被拒绝或无权限写入 `.claude/settings.local.json` 时，**不得**改写到其他文件，而应直接输出一段可复制执行的 shell 命令（使用 `python3 -c` 或 `jq`）让用户自己运行，例如：
+
+   ```bash
+   python3 -c "import json,os; p='.claude/settings.local.json'; os.makedirs('.claude',exist_ok=True); d=json.load(open(p)) if os.path.exists(p) else {}; d['requirementProject']='my-project'; d['requirementRole']='primary'; json.dump(d,open(p,'w'),indent=2,ensure_ascii=False)"
+   ```
 
 ```python
 # 正确写法
