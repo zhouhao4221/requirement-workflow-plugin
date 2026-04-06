@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-这是一个 Claude Code 插件工具集（aiforge），包含多个开发流程插件。通过 marketplace.json 统一管理。
+这是一个 Claude Code 插件工具集（DevFlow），包含多个开发流程插件。通过 marketplace.json 统一管理。
 
 ## 架构
 

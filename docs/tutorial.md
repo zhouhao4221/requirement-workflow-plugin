@@ -12,10 +12,10 @@
 
 ```bash
 # 1. 添加插件仓库为 marketplace
-claude plugins marketplace add https://github.com/zhouhao4221/requirement-workflow-plugin
+claude plugins marketplace add https://github.com/zhouhao4221/devflow-claude
 
 # 2. 从 marketplace 安装插件
-claude plugins install req@aiforge
+claude plugins install req@devflow
 
 # 验证安装
 claude plugins list

@@ -1,12 +1,12 @@
 {
-  "name": "aiforge",
+  "name": "devflow",
   "owner": {
     "name": "Haiqing",
     "email": "zhouhao4221@gmail.com"
   },
   "metadata": {
     "description": "AI 驱动的软件全生命周期管理工具集",
-    "version": "2.0.0"
+    "version": "2.1.0"
   },
   "plugins": [
     {
