@@ -118,6 +118,12 @@ plugins/
 - `/req:changelog <version> [--from=<tag|commit>] [--to=<tag|commit>]` - 生成版本升级说明（readonly 可用）
 - `/req:release <version> [--from=<tag>] [--to=<ref>]` - 颁布版本：合并 SQL、生成回滚、调用 changelog、打 tag、创建 Gitea/GitHub Release（readonly 可用）
 
+**Migration SQL 约定**：
+- 开发过程中产生的 migration SQL 统一放在 `docs/migrations/` 目录下，文件名包含对应需求编号（如 `feat-REQ-001-add-points.sql`）
+- `/req:dev` 在生成数据库变更时应将 SQL 文件写入此目录
+- `/req:release` 会按文件名中的 `REQ-XXX` / `QUICK-XXX` 自动关联需求并合并到 `docs/migrations/released/<version>.sql`
+- `docs/migrations/released/` 为已发布版本归档目录，不会被再次扫描
+
 **项目管理命令（全局缓存模式）：**
 - `/req:init <project-name>` - 初始化项目，创建全局缓存
 - `/req:use <project-name>` - 切换当前仓库绑定的项目
