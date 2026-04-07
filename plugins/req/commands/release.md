@@ -12,17 +12,19 @@ description: 颁布版本 - 合并 SQL、生成回滚、打 tag、创建 Release
 ## 命令格式
 
 ```
-/req:release <version> [--from=<tag|commit>] [--to=<ref>]
+/req:release <version> [--from=<tag|commit>] [--to=<ref>] [--prerelease]
 ```
 
 **参数说明：**
 - `<version>`：**必填**，版本号（如 `v1.2.0`、`1.2.0`）
 - `--from`：可选，起始点，默认上一个 git tag
 - `--to`：可选，结束点，默认 HEAD
+- `--prerelease`：可选，强制标记为预发布（仅用于在主分支上也想发布 RC 的场景）
 
 **示例：**
 - `/req:release v1.2.0`
 - `/req:release v1.2.0 --from=v1.1.0`
+- `/req:release v1.2.0-rc.1 --prerelease`
 
 ---
 
@@ -33,8 +35,59 @@ description: 颁布版本 - 合并 SQL、生成回滚、打 tag、创建 Release
 ```python
 if not version:
     print("❌ 请指定版本号")
-    print("用法：/req:release <version> [--from=<tag>] [--to=<ref>]")
+    print("用法：/req:release <version> [--from=<tag>] [--to=<ref>] [--prerelease]")
     exit()
+```
+
+### 1.5 分支策略判定（预发布 / 正式发布）
+
+读取 `branchStrategy` 和当前分支，决定 release 类型：
+
+```python
+strategy = read_settings("branchStrategy", {})
+current_branch = run("git branch --show-current")
+main_branch = strategy.get("mainBranch", "main")
+develop_branch = strategy.get("developBranch")
+hotfix_prefix = strategy.get("hotfixPrefix", "hotfix/")
+```
+
+**判定规则**：
+
+| 当前分支 | Release 类型 | prerelease 标记 |
+|---------|-------------|----------------|
+| `mainBranch`（如 main/master） | 正式发布 | `false` |
+| `developBranch`（如 develop） | 预发布 | `true` |
+| `release/*` | 预发布 | `true` |
+| `<hotfixPrefix>*`（如 hotfix/*） | 预发布 | `true` |
+| 其他功能分支（feat/*、fix/* 等） | **禁止发布**，硬阻止 | — |
+
+```python
+if current_branch == main_branch:
+    is_prerelease = False
+elif current_branch == develop_branch \
+     or current_branch.startswith("release/") \
+     or current_branch.startswith(hotfix_prefix):
+    is_prerelease = True
+else:
+    print(f"❌ 当前分支 {current_branch} 不允许发布版本")
+    print(f"   允许的分支：{main_branch}、{develop_branch or '(未配置)'}、release/*、{hotfix_prefix}*")
+    print(f"   请先切换到合适的分支再执行 /req:release")
+    exit()
+
+# --prerelease 参数可强制覆盖：仅允许从「正式」改为「预发布」
+if args.prerelease:
+    is_prerelease = True
+# 不提供反向覆盖（--release）—— 非主分支禁止创建正式发布是硬规则
+```
+
+**未配置 `branchStrategy`** 时：默认按当前分支为 main 处理，正式发布。`--prerelease` 仍可强制改为预发布。
+
+显示判定结果（在交互选择前）：
+
+```
+📌 当前分支：develop
+📌 分支策略：git-flow
+🏷️  Release 类型：预发布（pre-release）
 ```
 
 ### 2. 确定 Git 范围
@@ -243,7 +296,7 @@ curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/releases" \
     \"name\": \"<version>\",
     \"body\": \"<changelog 正文，需 JSON 转义>\",
     \"draft\": false,
-    \"prerelease\": false
+    \"prerelease\": ${IS_PRERELEASE}
   }"
 ```
 
@@ -271,6 +324,7 @@ command -v gh &>/dev/null
 gh release create <version> \
   --title "<version>" \
   --notes-file docs/changelogs/<version>.md \
+  ${IS_PRERELEASE:+--prerelease} \
   docs/migrations/released/<version>.sql \
   docs/migrations/released/<version>.rollback.sql
 ```
@@ -296,6 +350,8 @@ gh release create <version> \
 
 📌 版本信息
 ├── 版本号：<version>
+├── 类型：正式发布 / 预发布
+├── 当前分支：<branch>
 ├── 发布日期：YYYY-MM-DD
 ├── 版本范围：<from>..<to>
 └── 包含需求：N 个
@@ -337,6 +393,9 @@ gh release create <version> \
 
 | 场景 | 处理方式 |
 |------|---------|
+| 当前在功能分支（feat/* 等） | **硬阻止**，提示切换到允许的分支 |
+| 在主分支但加 `--prerelease` | 标记为预发布 |
+| 在 develop / release/* / hotfix/* | 自动标记为预发布 |
 | 没有 git tag | 从首次提交开始，显示警告 |
 | 范围内无 commit | 终止操作 |
 | 范围内无候选需求 | 提示后询问是否继续（仅打 tag + changelog） |
