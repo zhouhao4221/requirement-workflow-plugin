@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "AI 驱动的软件全生命周期管理工具集",
-    "version": "2.2.1"
+    "version": "2.3.0"
   },
   "plugins": [
     {

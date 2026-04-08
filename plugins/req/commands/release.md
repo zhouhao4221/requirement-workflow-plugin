@@ -51,26 +51,34 @@ main_branch = strategy.get("mainBranch", "main")
 
 **判定规则**：
 
-| 当前分支 | Release 类型 | prerelease 标记 |
-|---------|-------------|----------------|
-| `mainBranch`（如 main/master） | 正式发布 | `false` |
-| `release/*` | 预发布（RC） | `true` |
-| 其他所有分支（develop、feat/*、fix/*、hotfix/* 等） | **禁止发布**，硬阻止 | — |
+| 当前分支 | 流程模式 | Release 类型 |
+|---------|---------|-------------|
+| `mainBranch`（如 main/master） | **直接发布** | 正式发布（`prerelease=false`） |
+| `release/*` | **直接发布** | 预发布（`prerelease=true`） |
+| `developBranch`（如 develop） | **跨分支流程**（合 SQL → PR → 合并后在主分支发预发布） | 预发布（`prerelease=true`，避免触发 CD） |
+| 其他所有分支（feat/*、fix/*、hotfix/* 等） | **禁止**，硬阻止 | — |
 
 > 说明：
-> - 「主分支」由 `branchStrategy.mainBranch` 决定（默认 `main`，也可能是 `master`、`trunk` 等）
-> - hotfix 必须先合回主分支，在主分支上打正式 tag，而不是在 hotfix 分支上发
-> - develop 不打 tag，RC 应在 `release/*` 分支上发
+> - 「主分支」由 `branchStrategy.mainBranch` 决定（默认 `main`）
+> - 「开发分支」由 `branchStrategy.developBranch` 决定（默认 `develop`）
+> - develop 上发布采用「跨分支流程」：不在 develop 上打 tag，最终 tag 创建在主分支
+> - hotfix 必须先合回主分支再执行 release
 
 ```python
+develop_branch = strategy.get("developBranch", "develop")
+
 if current_branch == main_branch:
+    flow_mode = "direct"
     is_prerelease = False
 elif current_branch.startswith("release/"):
+    flow_mode = "direct"
     is_prerelease = True
+elif current_branch == develop_branch:
+    flow_mode = "cross-branch"
+    is_prerelease = True  # 从 develop 发起的流程统一走预发布，避免误触发 CD
 else:
     print(f"❌ 当前分支 {current_branch} 不允许发布版本")
-    print(f"   允许的分支：{main_branch}（正式）、release/*（预发布）")
-    print(f"   hotfix 请先合回 {main_branch} 再发布")
+    print(f"   允许的分支：{main_branch}（正式）、release/*（预发布）、{develop_branch}（跨分支预发布）")
     exit()
 
 # --prerelease 参数可强制覆盖：仅允许从「正式」改为「预发布」
@@ -243,6 +251,61 @@ DROP TABLE IF EXISTS user_point_logs;
 
 若 `docs/changelogs/<version>.md` 已存在 → 通过 Hook 弹出确认对话框。
 
+### 8.5 跨分支流程（仅 `flow_mode == "cross-branch"`）
+
+当在 `developBranch` 上执行 release 时，不在 develop 上打 tag，而是通过 PR 把产物合并到主分支，再在主分支上完成 tag 和 Release。
+
+**流程**：
+
+1. **提交产物到 develop**
+   ```bash
+   git add docs/migrations/released/<version>.sql \
+           docs/migrations/released/<version>.rollback.sql \
+           docs/changelogs/<version>.md
+   git commit -m "chore(release): prepare <version>"
+   git push origin <develop_branch>
+   ```
+   （若部分文件不存在则跳过添加）
+
+2. **创建 PR：develop → main**
+
+   根据 `repoType` 调用相应接口（复用 `/req:pr` 的创建逻辑）：
+   - `gitea` → Gitea API
+   - `github` → `gh pr create`
+   - `other` → 输出手动命令后**终止命令**
+
+   PR 标题：`chore(release): <version>`
+   PR Body：包含本次发布的需求清单 + changelog 正文摘要 + 「合并后将自动在 {main_branch} 上创建 {version} 预发布」提示。
+
+3. **等待用户确认 PR 合并完成**
+
+   输出提示并等待用户回复：
+   ```
+   ⏸️  PR 已创建：<PR URL>
+
+       请在平台上完成代码审查并合并 PR。
+       合并完成后回复「继续」或「y」以继续后续发布流程。
+       回复其他内容将中止本次发布（已创建的 SQL/changelog/PR 会保留）。
+   ```
+
+   **这是强制交互点，必须等待用户输入，不得自动跳过或假设已合并。**
+
+4. **拉取主分支最新状态**
+
+   用户确认后：
+   ```bash
+   git checkout <main_branch>
+   git pull --ff-only origin <main_branch>
+   ```
+
+   验证 PR 的合并提交已进入主分支（通过检查 `docs/changelogs/<version>.md` 是否存在于当前 HEAD）。若未检测到则警告并再次等待用户确认。
+
+5. **继续执行步骤 9（打 tag）和步骤 10（创建 Release）**，此时：
+   - tag 创建在 `main_branch` 的 HEAD 上
+   - Release 标记为 `prerelease=true`（Gitea/GitHub 均不会触发正式 CD）
+
+> 对于 `flow_mode == "direct"`，跳过本步骤，直接进入步骤 9。
+
 ### 9. 创建 Git Tag
 
 ```bash
@@ -338,6 +401,21 @@ gh release create <version> \
 
 仅输出可手动执行的命令提示，不调用 API。
 
+### 10.5 切回起始分支
+
+无论 `flow_mode` 是 `direct` 还是 `cross-branch`，在 tag/Release 完成后都要切回命令启动时所在的分支（记录为 `start_branch`）：
+
+```bash
+if [ "$(git branch --show-current)" != "$start_branch" ]; then
+    git checkout "$start_branch"
+fi
+```
+
+**用途**：
+- 跨分支模式下从 `main` 切回 `developBranch`，避免用户残留在主分支上误操作
+- 直接模式下若当前已在 `start_branch`，等同空操作
+- 切换前若工作区有脏改动（不应该发生，但防御性检查），警告并跳过切换
+
 ### 11. 输出最终报告
 
 ```
@@ -392,9 +470,12 @@ gh release create <version> \
 
 | 场景 | 处理方式 |
 |------|---------|
-| 当前在 develop / feat/* / fix/* / hotfix/* 等 | **硬阻止**，提示切换到 `mainBranch` 或 release/* |
+| 当前在 feat/* / fix/* / hotfix/* 等 | **硬阻止**，提示切换到 `mainBranch` / release/* / `developBranch` |
 | 在主分支（`mainBranch`）但加 `--prerelease` | 标记为预发布 |
 | 在 release/* | 自动标记为预发布 |
+| 在 `developBranch` | 走跨分支流程，最终在主分支上发预发布 |
+| 跨分支流程中 PR 未合并用户中止 | 保留已生成的 SQL/changelog/PR，不打 tag |
+| 跨分支流程中主分支 pull 后找不到合并提交 | 警告后重新等待用户确认 |
 | 没有 git tag | 从首次提交开始，显示警告 |
 | 范围内无 commit | 终止操作 |
 | 范围内无候选需求 | 提示后询问是否继续（仅打 tag + changelog） |
