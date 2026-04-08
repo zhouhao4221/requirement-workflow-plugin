@@ -58,7 +58,8 @@ main_branch = strategy.get("mainBranch", "main")
 | 其他所有分支（develop、feat/*、fix/*、hotfix/* 等） | **禁止发布**，硬阻止 | — |
 
 > 说明：
-> - hotfix 必须先合回 `main`，在 `main` 上打正式 tag，而不是在 hotfix 分支上发
+> - 「主分支」由 `branchStrategy.mainBranch` 决定（默认 `main`，也可能是 `master`、`trunk` 等）
+> - hotfix 必须先合回主分支，在主分支上打正式 tag，而不是在 hotfix 分支上发
 > - develop 不打 tag，RC 应在 `release/*` 分支上发
 
 ```python
@@ -78,7 +79,7 @@ if args.prerelease:
 # 不提供反向覆盖（--release）—— 非主分支禁止创建正式发布是硬规则
 ```
 
-**未配置 `branchStrategy`** 时：默认按当前分支为 main 处理，正式发布。`--prerelease` 仍可强制改为预发布。
+**未配置 `branchStrategy`** 时：`mainBranch` 默认为 `main`，按上述规则判定。`--prerelease` 仍可强制改为预发布。
 
 显示判定结果（在交互选择前）：
 
@@ -391,8 +392,8 @@ gh release create <version> \
 
 | 场景 | 处理方式 |
 |------|---------|
-| 当前在 develop / feat/* / fix/* / hotfix/* 等 | **硬阻止**，提示切换到 main 或 release/* |
-| 在主分支但加 `--prerelease` | 标记为预发布 |
+| 当前在 develop / feat/* / fix/* / hotfix/* 等 | **硬阻止**，提示切换到 `mainBranch` 或 release/* |
+| 在主分支（`mainBranch`）但加 `--prerelease` | 标记为预发布 |
 | 在 release/* | 自动标记为预发布 |
 | 没有 git tag | 从首次提交开始，显示警告 |
 | 范围内无 commit | 终止操作 |
