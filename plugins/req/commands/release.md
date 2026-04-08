@@ -331,6 +331,17 @@ DROP TABLE IF EXISTS user_point_logs;
 
 ### 9. 创建 Git Tag
 
+**必须确认当前在正确的分支 HEAD 上**：
+
+```bash
+# tag 应该打在 tag_target 分支上（direct 模式 = 当前分支，cross-branch 模式 = main_branch）
+CURRENT=$(git branch --show-current)
+if [ "$CURRENT" != "$tag_target" ]; then
+    echo "❌ 当前分支 $CURRENT ≠ 预期 tag 目标 $tag_target，终止"
+    exit 1
+fi
+```
+
 ```bash
 TAG_MESSAGE="Release <version>
 
@@ -341,11 +352,16 @@ Includes:
 See docs/changelogs/<version>.md for full notes."
 
 git tag -a <version> -m "$TAG_MESSAGE"
+
+# 立即 push tag，避免 Gitea Release API 在没有 tag 时使用 target_commitish 指向错误分支
+git push origin <version>
 ```
 
-**通过 PreToolUse Hook** 自动弹出原生确认（已有 Bash 拦截机制覆盖 git 操作）。
+**`tag_target` 定义**：
+- `direct` 模式：`current_branch`（main 或 release/*）
+- `cross-branch` 模式：`main_branch`
 
-**不自动 push**，最终报告中提示用户执行 `git push origin <version>`。
+**为什么先 push tag**：Gitea/GitHub 的 Release API 在 tag 不存在时会用 `target_commitish` 现场创建 tag。如果 `target_commitish` 默认为默认分支（可能是 develop），tag 就被打错。先推已存在的 tag，Release API 会直接引用，不再创建。
 
 ### 10. 创建 Gitea / GitHub Release
 
@@ -371,19 +387,22 @@ REMOTE_URL=$(git remote get-url origin)
 
 **Token 检查**：从 `branchStrategy.giteaToken` 读取，缺失时输出提示并跳过 Release 创建（tag 仍保留）。
 
-**调用 API**：
+**调用 API**（必须显式传 `target_commitish`，防止默认分支错误）：
 ```bash
 curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/releases" \
   -H "Authorization: token ${TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{
     \"tag_name\": \"<version>\",
+    \"target_commitish\": \"${tag_target}\",
     \"name\": \"<version>\",
     \"body\": \"<changelog 正文，需 JSON 转义>\",
     \"draft\": false,
     \"prerelease\": ${IS_PRERELEASE}
   }"
 ```
+
+> `target_commitish` 必须是 `tag_target`（跨分支模式下 = `main_branch`）。如果 tag 已经 push，Gitea 会直接引用已有 tag；否则按 `target_commitish` 创建 tag。
 
 **已存在时**（HTTP 409 或查询命中）：提示 Release 已存在，输出链接，不重复创建。
 
