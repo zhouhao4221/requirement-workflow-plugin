@@ -269,13 +269,28 @@ DROP TABLE IF EXISTS user_point_logs;
 
 2. **创建 PR：develop → main**
 
-   根据 `repoType` 调用相应接口（复用 `/req:pr` 的创建逻辑）：
+   **⚠️ 复用 PR 前必须检查状态**：
+
+   ```bash
+   # Gitea 示例：查询 develop→main 的 PR，必须过滤 state=open
+   curl -s "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls?state=open&head=${OWNER}:${develop_branch}&base=${main_branch}" \
+     -H "Authorization: token ${TOKEN}"
+   ```
+
+   判定规则：
+   - 查询结果中有 `state == "open"` 的 PR → 复用（确认 head 指向最新 develop commit）
+   - 查询结果为空，或只有 `merged`/`closed` 状态的 PR → **必须新建**
+   - **绝不能复用已 merged/closed 的 PR 编号**
+
+   根据 `repoType` 调用相应接口：
    - `gitea` → Gitea API
    - `github` → `gh pr create`
    - `other` → 输出手动命令后**终止命令**
 
    PR 标题：`chore(release): <version>`
    PR Body：包含本次发布的需求清单 + changelog 正文摘要 + 「合并后将自动在 {main_branch} 上创建 {version} 预发布」提示。
+
+   > **提交顺序关键**：必须先完成步骤 1（提交产物到 develop 并 push），再创建/复用 PR。这样 PR 的 head 就包含 changelog，合并后主分支就有 changelog，不会出现步骤 4 的 "changelog 不存在" 错误。
 
 3. **等待用户确认 PR 合并完成**
 
@@ -298,7 +313,15 @@ DROP TABLE IF EXISTS user_point_logs;
    git pull --ff-only origin <main_branch>
    ```
 
-   验证 PR 的合并提交已进入主分支（通过检查 `docs/changelogs/<version>.md` 是否存在于当前 HEAD）。若未检测到则警告并再次等待用户确认。
+   验证 PR 的合并提交已进入主分支：
+   ```bash
+   test -f docs/changelogs/<version>.md
+   ```
+
+   若文件不存在说明 PR 未真正合并或合并的是旧版本（例如复用了已合并 PR），此时：
+   - **不得**尝试 `git checkout develop -- docs/changelogs/<version>.md` 这种补丁式操作
+   - **不得**直接 push master
+   - 警告用户 PR 状态异常，回到步骤 2 重新创建新 PR，再次等待合并确认
 
 5. **继续执行步骤 9（打 tag）和步骤 10（创建 Release）**，此时：
    - tag 创建在 `main_branch` 的 HEAD 上
