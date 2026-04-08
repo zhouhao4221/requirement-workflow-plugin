@@ -47,8 +47,6 @@ if not version:
 strategy = read_settings("branchStrategy", {})
 current_branch = run("git branch --show-current")
 main_branch = strategy.get("mainBranch", "main")
-develop_branch = strategy.get("developBranch")
-hotfix_prefix = strategy.get("hotfixPrefix", "hotfix/")
 ```
 
 **判定规则**：
@@ -56,22 +54,22 @@ hotfix_prefix = strategy.get("hotfixPrefix", "hotfix/")
 | 当前分支 | Release 类型 | prerelease 标记 |
 |---------|-------------|----------------|
 | `mainBranch`（如 main/master） | 正式发布 | `false` |
-| `developBranch`（如 develop） | 预发布 | `true` |
-| `release/*` | 预发布 | `true` |
-| `<hotfixPrefix>*`（如 hotfix/*） | 预发布 | `true` |
-| 其他功能分支（feat/*、fix/* 等） | **禁止发布**，硬阻止 | — |
+| `release/*` | 预发布（RC） | `true` |
+| 其他所有分支（develop、feat/*、fix/*、hotfix/* 等） | **禁止发布**，硬阻止 | — |
+
+> 说明：
+> - hotfix 必须先合回 `main`，在 `main` 上打正式 tag，而不是在 hotfix 分支上发
+> - develop 不打 tag，RC 应在 `release/*` 分支上发
 
 ```python
 if current_branch == main_branch:
     is_prerelease = False
-elif current_branch == develop_branch \
-     or current_branch.startswith("release/") \
-     or current_branch.startswith(hotfix_prefix):
+elif current_branch.startswith("release/"):
     is_prerelease = True
 else:
     print(f"❌ 当前分支 {current_branch} 不允许发布版本")
-    print(f"   允许的分支：{main_branch}、{develop_branch or '(未配置)'}、release/*、{hotfix_prefix}*")
-    print(f"   请先切换到合适的分支再执行 /req:release")
+    print(f"   允许的分支：{main_branch}（正式）、release/*（预发布）")
+    print(f"   hotfix 请先合回 {main_branch} 再发布")
     exit()
 
 # --prerelease 参数可强制覆盖：仅允许从「正式」改为「预发布」
@@ -393,9 +391,9 @@ gh release create <version> \
 
 | 场景 | 处理方式 |
 |------|---------|
-| 当前在功能分支（feat/* 等） | **硬阻止**，提示切换到允许的分支 |
+| 当前在 develop / feat/* / fix/* / hotfix/* 等 | **硬阻止**，提示切换到 main 或 release/* |
 | 在主分支但加 `--prerelease` | 标记为预发布 |
-| 在 develop / release/* / hotfix/* | 自动标记为预发布 |
+| 在 release/* | 自动标记为预发布 |
 | 没有 git tag | 从首次提交开始，显示警告 |
 | 范围内无 commit | 终止操作 |
 | 范围内无候选需求 | 提示后询问是否继续（仅打 tag + changelog） |
