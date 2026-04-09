@@ -197,6 +197,24 @@ find docs/migrations -maxdepth 2 -name "*.sql" \
 
 **顺序**：按用户选择列表的顺序，同需求多 SQL 按文件名排序。
 
+**合并后删除原始 SQL 文件**：
+
+合并文件成功写入 `docs/migrations/released/<version>.sql` 后，删除本次纳入合并的所有原始 SQL 文件（即步骤 4 扫描并被用户选中的文件），避免下次 release 重复扫描到。
+
+```bash
+# 对每个已合并的源文件执行
+git rm <source_sql_path>
+# 若文件未被 git 跟踪则用 rm
+```
+
+规则：
+- 仅删除**被选中并成功合并**的文件，未选中需求的 SQL 保留
+- 使用 `git rm` 让删除进入暂存区，与生成的 `released/<version>.sql` 一起提交（跨分支流程步骤 8.5 的 commit 会一并带上）
+- 若 `released/<version>.sql` 写入失败则**不得**删除原文件
+- 删除操作通过 Hook 会弹出 Bash 确认对话框
+
+最终报告步骤 11 的「SQL 脚本」区块追加一行：`└── 已删除 X 个源 SQL 文件`。
+
 ### 7. 生成回滚 SQL
 
 **输出文件**：`docs/migrations/released/<version>.rollback.sql`
