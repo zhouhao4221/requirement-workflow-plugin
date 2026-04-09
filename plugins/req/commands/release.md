@@ -12,7 +12,7 @@ description: 颁布版本 - 合并 SQL、生成回滚、打 tag、创建 Release
 ## 命令格式
 
 ```
-/req:release <version> [--from=<tag|commit>] [--to=<ref>] [--prerelease]
+/req:release <version> [--from=<tag|commit>] [--to=<ref>] [--prerelease] [--main=<branch>]
 ```
 
 **参数说明：**
@@ -20,11 +20,13 @@ description: 颁布版本 - 合并 SQL、生成回滚、打 tag、创建 Release
 - `--from`：可选，起始点，默认上一个 git tag
 - `--to`：可选，结束点，默认 HEAD
 - `--prerelease`：可选，强制标记为预发布（仅用于在主分支上也想发布 RC 的场景）
+- `--main=<branch>`：可选，临时覆盖主分支名（优先级高于 `branchStrategy.mainBranch`），用于 tag 目标和跨分支流程的合并目标
 
 **示例：**
 - `/req:release v1.2.0`
 - `/req:release v1.2.0 --from=v1.1.0`
 - `/req:release v1.2.0-rc.1 --prerelease`
+- `/req:release v1.2.0 --main=master`（临时把主分支当作 master，覆盖配置）
 
 ---
 
@@ -46,7 +48,7 @@ if not version:
 ```python
 strategy = read_settings("branchStrategy", {})
 current_branch = run("git branch --show-current")
-main_branch = strategy.get("mainBranch", "main")
+main_branch = args.main or strategy.get("mainBranch", "main")  # --main 参数优先
 ```
 
 **判定规则**：
