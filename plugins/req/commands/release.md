@@ -197,23 +197,27 @@ find docs/migrations -maxdepth 2 -name "*.sql" \
 
 **顺序**：按用户选择列表的顺序，同需求多 SQL 按文件名排序。
 
-**合并后删除原始 SQL 文件**：
+### 6.5 删除已合并的原始 SQL 文件
 
-合并文件成功写入 `docs/migrations/released/<version>.sql` 后，删除本次纳入合并的所有原始 SQL 文件（即步骤 4 扫描并被用户选中的文件），避免下次 release 重复扫描到。
+**⚠️ 必须在步骤 6 写入成功后立即执行，不可跳过。**
+
+对本次纳入合并的每个源 SQL 文件执行删除：
 
 ```bash
-# 对每个已合并的源文件执行
-git rm <source_sql_path>
+# 对每个已合并的源文件执行（记录在步骤 4 扫描结果中、且被步骤 5 用户选中的文件）
+for sql_file in <merged_sql_files>; do
+    git rm "$sql_file"
+done
 # 若文件未被 git 跟踪则用 rm
 ```
 
 规则：
 - 仅删除**被选中并成功合并**的文件，未选中需求的 SQL 保留
-- 使用 `git rm` 让删除进入暂存区，与生成的 `released/<version>.sql` 一起提交（跨分支流程步骤 8.5 的 commit 会一并带上）
-- 若 `released/<version>.sql` 写入失败则**不得**删除原文件
+- 使用 `git rm` 将删除放入暂存区（不单独 commit，在步骤 8.5.1 或 8.8 统一提交）
+- 若 `released/<version>.sql` 写入失败则**不得**执行本步骤
 - 删除操作通过 Hook 会弹出 Bash 确认对话框
 
-最终报告步骤 11 的「SQL 脚本」区块追加一行：`└── 已删除 X 个源 SQL 文件`。
+最终报告步骤 11 的「SQL 脚本」区块追加一行：`└── 已清理 X 个源 SQL 文件`。
 
 ### 7. 生成回滚 SQL
 
@@ -277,11 +281,12 @@ DROP TABLE IF EXISTS user_point_logs;
 
 **流程**：
 
-1. **提交产物到 develop**
+1. **提交产物到 develop**（包含合并 SQL、回滚 SQL、changelog，以及步骤 6 中 `git rm` 删除的原始 SQL）
    ```bash
    git add docs/migrations/released/<version>.sql \
            docs/migrations/released/<version>.rollback.sql \
            docs/changelogs/<version>.md
+   # 步骤 6 的 git rm 已将删除放入暂存区，无需再 add
    git commit -m "chore(release): prepare <version>"
    git push origin <develop_branch>
    ```
@@ -347,7 +352,23 @@ DROP TABLE IF EXISTS user_point_logs;
    - tag 创建在 `main_branch` 的 HEAD 上
    - Release 标记为 `prerelease=true`（Gitea/GitHub 均不会触发正式 CD）
 
-> 对于 `flow_mode == "direct"`，跳过本步骤，直接进入步骤 9。
+> 对于 `flow_mode == "direct"`，跳过本步骤，进入步骤 8.8。
+
+### 8.8 提交产物（仅 `flow_mode == "direct"`）
+
+direct 模式下，需在打 tag 前将所有产物和删除操作提交到当前分支：
+
+```bash
+git add docs/migrations/released/<version>.sql \
+        docs/migrations/released/<version>.rollback.sql \
+        docs/changelogs/<version>.md
+# 步骤 6 的 git rm 已将删除放入暂存区，无需再 add
+git commit -m "chore(release): prepare <version>"
+```
+
+（若部分文件不存在则跳过添加；若无任何变更则跳过 commit）
+
+> 跨分支模式已在步骤 8.5.1 中处理，跳过本步骤。
 
 ### 9. 创建 Git Tag
 
