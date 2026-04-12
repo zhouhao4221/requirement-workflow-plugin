@@ -1,5 +1,8 @@
 ---
 description: 切换需求项目 - 将当前仓库绑定到不同的项目
+argument-hint: "<project-name>"
+allowed-tools: Read, Write, Edit, Glob, Bash(ls:*)
+model: claude-haiku-4-5-20251001
 ---
 
 # 切换需求项目

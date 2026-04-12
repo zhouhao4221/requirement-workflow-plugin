@@ -1,5 +1,7 @@
 ---
 description: 项目管理助手 - 项目概况仪表盘和子命令入口
+allowed-tools: Read, Glob, Grep, Bash(git log:*, git diff:*, git tag:*, git status:*)
+model: claude-sonnet-4-6
 ---
 
 # 项目管理助手

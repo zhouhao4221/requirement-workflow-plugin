@@ -1,5 +1,7 @@
 ---
 description: 站会摘要 - 昨天完成、今天计划、阻塞项
+allowed-tools: Read, Glob, Grep, Bash(git log:*, git diff:*, git status:*)
+model: claude-haiku-4-5-20251001
 ---
 
 # 站会摘要

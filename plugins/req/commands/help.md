@@ -1,5 +1,7 @@
 ---
 description: 使用教程 - 查看插件完整使用指南
+allowed-tools: Read
+model: claude-haiku-4-5-20251001
 ---
 
 # 使用教程

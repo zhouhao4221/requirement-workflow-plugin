@@ -1,5 +1,8 @@
 ---
 description: 完成需求 - 标记完成并归档
+argument-hint: "[REQ-XXX]"
+allowed-tools: Read, Write, Edit, Glob, Bash(git:*, mv:*, gh:*, curl:*)
+model: claude-sonnet-4-6
 ---
 
 # 完成需求

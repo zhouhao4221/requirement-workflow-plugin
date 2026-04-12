@@ -1,5 +1,7 @@
 ---
 description: 使用帮助 - 查看项目管理助手所有命令
+allowed-tools: Read
+model: claude-haiku-4-5-20251001
 ---
 
 # 项目管理助手 - 使用帮助

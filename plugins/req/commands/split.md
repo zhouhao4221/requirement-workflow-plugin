@@ -1,5 +1,8 @@
 ---
 description: 需求拆分分析 - 判断需求粒度并给出拆分建议
+argument-hint: "[需求描述]"
+allowed-tools: Read, Glob, Grep
+model: claude-opus-4-6
 ---
 
 # 需求拆分分析

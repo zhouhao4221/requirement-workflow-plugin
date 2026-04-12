@@ -1,5 +1,8 @@
 ---
 description: 更新模板 - 将插件最新模板同步到项目本地
+argument-hint: "[模板名] [--force]"
+allowed-tools: Read, Write, Edit, Glob, Bash(cp:*, diff:*, ls:*)
+model: claude-sonnet-4-6
 ---
 
 # 更新模板文件

@@ -1,5 +1,8 @@
 ---
 description: 需求工作流管理 - 列出所有需求及其状态
+argument-hint: "[子命令] [--module=模块名] [--type=后端|前端|全栈]"
+allowed-tools: Read, Glob, Grep, Bash(ls:*)
+model: claude-haiku-4-5-20251001
 ---
 
 # 需求工作流管理

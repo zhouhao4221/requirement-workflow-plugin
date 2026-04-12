@@ -1,5 +1,8 @@
 ---
 description: 编辑 PRD - 修改和完善产品需求文档
+argument-hint: "[章节名或编号]"
+allowed-tools: Read, Write, Edit, Glob, Grep
+model: claude-opus-4-6
 ---
 
 # 编辑 PRD

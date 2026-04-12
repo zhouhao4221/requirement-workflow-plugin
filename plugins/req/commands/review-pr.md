@@ -1,5 +1,8 @@
 ---
 description: PR 审查与合并 - AI 代码审查、提交评论、合并 PR
+argument-hint: "[review|merge] [PR-ID]"
+allowed-tools: Read, Glob, Grep, Bash(git:*, gh:*, curl:*)
+model: claude-opus-4-6
 ---
 
 # PR 审查与合并

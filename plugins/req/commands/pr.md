@@ -1,5 +1,8 @@
 ---
 description: 创建 PR - 根据仓库类型自动创建 Pull Request
+argument-hint: "[REQ-XXX]"
+allowed-tools: Read, Glob, Grep, Bash(git:*, gh:*, curl:*)
+model: claude-sonnet-4-6
 ---
 
 # 创建 Pull Request

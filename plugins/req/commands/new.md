@@ -1,5 +1,8 @@
 ---
 description: 创建新需求 - 基于模板创建需求文档
+argument-hint: "[标题] [--type=后端|前端|全栈] [--module=模块名]"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*)
+model: claude-sonnet-4-6
 ---
 
 # 创建新需求

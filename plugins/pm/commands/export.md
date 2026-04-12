@@ -1,5 +1,8 @@
 ---
 description: 导出内容 - 将 pm 生成的内容保存到 docs/reports/
+argument-hint: "<命令> [参数]"
+allowed-tools: Read, Write, Edit, Glob, Bash(mkdir:*)
+model: claude-haiku-4-5-20251001
 ---
 
 # 导出内容

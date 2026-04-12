@@ -1,5 +1,8 @@
 ---
 description: 项目简介 - 生成面向新人或客户的项目概述
+argument-hint: "[--lang=zh|en]"
+allowed-tools: Read, Glob, Grep, Bash(git log:*)
+model: claude-sonnet-4-6
 ---
 
 # 项目简介

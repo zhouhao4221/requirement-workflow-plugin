@@ -1,5 +1,8 @@
 ---
 description: 分支管理 - 配置分支策略、查看分支状态、创建紧急修复
+argument-hint: "[init|status|hotfix] [描述]"
+allowed-tools: Read, Write, Edit, Glob, Bash(git:*)
+model: claude-sonnet-4-6
 ---
 
 # 分支管理

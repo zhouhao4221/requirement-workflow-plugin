@@ -1,5 +1,8 @@
 ---
 description: 颁布版本 - 合并 SQL、生成回滚、打 tag、创建 Release
+argument-hint: "<version> [--from=<tag>] [--to=<ref>]"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, curl:*)
+model: claude-opus-4-6
 ---
 
 # 颁布版本

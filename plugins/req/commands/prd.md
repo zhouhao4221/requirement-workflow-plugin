@@ -1,5 +1,8 @@
 ---
 description: 查看 PRD 状态 - 产品需求文档概览和章节填充分析
+argument-hint: "[--section=章节名]"
+allowed-tools: Read, Glob, Grep
+model: claude-haiku-4-5-20251001
 ---
 
 # 查看 PRD 状态

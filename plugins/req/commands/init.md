@@ -1,5 +1,8 @@
 ---
 description: 初始化需求项目 - 创建本地存储和全局缓存
+argument-hint: "<project-name>"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(mkdir:*, ls:*, cp:*)
+model: claude-sonnet-4-6
 ---
 
 # 初始化需求项目

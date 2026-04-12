@@ -66,6 +66,27 @@ plugins/
 
 ### 命令结构
 
+每个命令文件（`commands/*.md`）通过 YAML frontmatter 声明元信息：
+
+```yaml
+---
+description: 命令简介
+argument-hint: "[参数] [--选项=值]"   # 斜杠菜单中显示的用法提示
+allowed-tools: Read, Glob, Grep       # 命令可用的工具白名单
+model: claude-sonnet-4-6              # 命令使用的模型
+---
+```
+
+**模型分级策略**：按命令复杂度分配模型，平衡响应速度与推理质量：
+
+| 模型 | 适用场景 | 典型命令 |
+|------|---------|---------|
+| `claude-haiku-4-5-20251001` | 纯读取、列表展示、帮助信息 | `/req`、`/req:status`、`/req:show`、`/req:prd`、`/req:help`、`/pm:standup`、`/pm:export`、`/api:help` |
+| `claude-sonnet-4-6` | 标准文档创建/编辑、Git 操作、数据统计 | `/req:new`、`/req:edit`、`/req:commit`、`/req:pr`、`/pm:stats`、`/api:config` |
+| `claude-opus-4-6` | 深度代码分析、方案生成、AI 审查 | `/req:dev`、`/req:fix`、`/req:do`、`/req:review-pr`、`/req:release`、`/pm:weekly`、`/pm:plan`、`/api:gen` |
+
+**allowed-tools 约束**：每个命令仅允许其必需的工具集，只读命令不能触发 Write/Edit/Bash，防止误操作。
+
 命令通过 `/req` 子命令模式调用：
 
 **需求管理命令（编号可选，自动识别当前需求）：**
@@ -145,10 +166,20 @@ plugins/
 
 ### 钩子
 
-在 `plugins/req/hooks/hooks.json` 中配置的前置/后置钩子：
+在 `plugins/req/hooks/hooks.json` 中配置的事件钩子：
+
+- **SessionStart（会话启动时）**：
+  - `session-context.sh` - 自动注入当前需求上下文（项目绑定、分支对应的 REQ/QUICK 编号、需求状态、进行中需求总数），省去每次开场手动查询
+
+- **PreToolUse（工具调用前）**：
+  - `confirm-before-write.sh` - 写入需求文档前弹出确认（timeout: 120s）
+  - `confirm-before-commit.sh` - git commit 等关键操作前弹出确认（timeout: 120s）
+
 - **PostToolUse（Write/Edit 后）**：
-  - `validate-requirement.sh` - 验证需求文档格式
-  - `sync-cache.sh` - **强制自动同步**到全局缓存（无需用户确认，以本地为准）
+  - `validate-requirement.sh` - 验证需求文档格式（timeout: 5s）
+  - `sync-cache.sh` - **强制自动同步**到全局缓存（timeout: 5s，无需用户确认，以本地为准）
+
+**超时策略**：交互型 hook（需等待用户确认）设 120s，非交互型 hook（自动执行）保持 5s。
 
 **缓存同步触发规则**：
 

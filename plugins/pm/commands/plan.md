@@ -1,5 +1,8 @@
 ---
 description: 生成方案文档 - 排期方案、技术方案、资源评估等
+argument-hint: "<主题>"
+allowed-tools: Read, Write, Glob, Grep, Bash(git log:*)
+model: claude-opus-4-6
 ---
 
 # 生成方案文档

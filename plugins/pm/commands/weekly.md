@@ -1,5 +1,8 @@
 ---
 description: 周报 - 基于项目数据自动生成本周工作汇报
+argument-hint: "[--from=YYYY-MM-DD] [--to=YYYY-MM-DD]"
+allowed-tools: Read, Glob, Grep, Bash(git log:*, git diff:*, git shortlog:*)
+model: claude-opus-4-6
 ---
 
 # 生成周报

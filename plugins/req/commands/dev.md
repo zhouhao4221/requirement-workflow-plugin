@@ -1,5 +1,8 @@
 ---
 description: 需求开发 - 启动或继续开发
+argument-hint: "[REQ-XXX]"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*)
+model: claude-opus-4-6
 ---
 
 # 需求开发

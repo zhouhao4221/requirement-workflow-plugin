@@ -1,5 +1,8 @@
 ---
 description: 查看需求详情 - 阅读需求完整内容
+argument-hint: "[REQ-XXX]"
+allowed-tools: Read, Glob, Grep
+model: claude-haiku-4-5-20251001
 ---
 
 # 查看需求详情

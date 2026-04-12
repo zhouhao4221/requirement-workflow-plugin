@@ -1,5 +1,7 @@
 ---
 description: 列出所有需求项目 - 查看全局缓存中的所有项目
+allowed-tools: Read, Glob, Bash(ls:*)
+model: claude-haiku-4-5-20251001
 ---
 
 # 列出所有需求项目

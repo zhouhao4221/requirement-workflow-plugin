@@ -1,5 +1,8 @@
 ---
 description: 模块管理 - 列出所有模块及其需求概览
+argument-hint: "[new|show] [模块名]"
+allowed-tools: Read, Write, Edit, Glob, Grep
+model: claude-sonnet-4-6
 ---
 
 # 模块管理

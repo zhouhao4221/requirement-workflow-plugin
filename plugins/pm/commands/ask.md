@@ -1,5 +1,8 @@
 ---
 description: 自由提问 - 基于项目数据回答任何项目相关问题
+argument-hint: "<问题>"
+allowed-tools: Read, Glob, Grep, Bash(git:*)
+model: claude-opus-4-6
 ---
 
 # 自由提问

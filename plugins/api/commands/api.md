@@ -1,5 +1,8 @@
 ---
 description: API 对接工具 - 列出接口概览和子命令帮助
+argument-hint: "[子命令] [参数]"
+allowed-tools: Read, Glob, Bash(python3:*)
+model: claude-haiku-4-5-20251001
 ---
 
 # API 对接工具

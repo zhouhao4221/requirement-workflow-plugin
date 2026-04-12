@@ -1,5 +1,8 @@
 ---
 description: 缓存管理 - 查看、清理全局需求缓存
+argument-hint: "<info|clear|clear-all|rebuild|export>"
+allowed-tools: Read, Glob, Bash(ls:*, rm:*, cp:*, mkdir:*, du:*)
+model: claude-haiku-4-5-20251001
 ---
 
 # 缓存管理

@@ -1,5 +1,8 @@
 ---
 description: 规范提交 - 生成 Conventional Commits 格式的 Git 提交
+argument-hint: "[消息]"
+allowed-tools: Read, Glob, Grep, Bash(git:*)
+model: claude-sonnet-4-6
 ---
 
 # 规范提交

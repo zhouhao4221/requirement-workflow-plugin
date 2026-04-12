@@ -1,5 +1,8 @@
 ---
 description: 搜索接口 - 按关键词搜索 Swagger 中的 API 接口
+argument-hint: "<关键词> [--tag=标签]"
+allowed-tools: Read, Glob, Bash(python3:*)
+model: claude-sonnet-4-6
 ---
 
 # 搜索接口

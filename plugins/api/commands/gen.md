@@ -1,5 +1,8 @@
 ---
 description: 代码生成 - 根据接口定义生成 TypeScript 类型和请求函数
+argument-hint: "<接口路径> [--dir=目录]"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(python3:*)
+model: claude-opus-4-6
 ---
 
 # 代码生成

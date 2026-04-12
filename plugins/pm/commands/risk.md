@@ -1,5 +1,7 @@
 ---
 description: 风险扫描 - 自动检测项目中的延期、阻塞和异常情况
+allowed-tools: Read, Glob, Grep, Bash(git log:*, git status:*)
+model: claude-opus-4-6
 ---
 
 # 风险扫描

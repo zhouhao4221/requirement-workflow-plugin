@@ -1,5 +1,8 @@
 ---
 description: 轻量修复 - 无文档的 bug 修复流程，AI 辅助定位问题
+argument-hint: "<问题描述>"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*)
+model: claude-opus-4-6
 ---
 
 # 轻量修复
