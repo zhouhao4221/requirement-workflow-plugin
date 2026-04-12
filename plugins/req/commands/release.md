@@ -612,10 +612,10 @@ find docs/migrations -maxdepth 2 -name "*.sql" \
 <若 is_draft == true>
 └── ✅ <repo_type> **Draft** Release <version>
        ├── prerelease:        <is_prerelease>
-       ├── target_commitish:  <SHA 前 8 位>（draft 阶段绑定 SHA）
+       ├── target_commitish:  <tag_target>（绑定主分支名）
        ├── 状态:               草稿（仅作者/管理员可见）
        └── ⚠️  需手工在平台点 Publish 才真正发布
-                publish 后平台会在 target SHA 上创建 lightweight tag
+                publish 后平台会在 target 分支 HEAD 上创建 lightweight tag
 
 ═══════════════════════════════════════════════
 
@@ -844,9 +844,6 @@ if [ "$CURRENT" != "$tag_target" ]; then
     echo "❌ 当前分支 $CURRENT ≠ 预期 tag 目标 $tag_target，终止"
     exit 1
 fi
-
-# 无论哪种模式都先捕获当前 HEAD SHA，供 step 10 的 Release API 使用
-tag_target_sha=$(git rev-parse HEAD)
 ```
 
 #### 9a. 非 draft 模式（`--no-draft`）：创建 annotated tag 并 push
@@ -870,7 +867,7 @@ git push origin <version>
 
 ```bash
 echo "📌 draft 模式：跳过本地 tag 创建，tag 将由平台在用户手工 publish 时生成"
-echo "   target_commitish SHA = ${tag_target_sha}（将传给 step 10 的 Release API）"
+echo "   target_commitish = ${tag_target}（绑定主分支名，将传给 step 10 的 Release API）"
 ```
 
 **不创建本地 annotated tag**，**不 push 任何 tag**。tag 的生命完全托付给 step 10 创建的 draft release：用户在 Gitea/GitHub 上点 Publish 时，平台会根据 draft 里记录的 `target_commitish` 生成 lightweight tag。
@@ -885,7 +882,7 @@ echo "   target_commitish SHA = ${tag_target_sha}（将传给 step 10 的 Releas
 
 **为什么 draft 模式反而不 push tag**：
 1. draft release 本身就把"创建 tag"这个动作推迟到 publish 时刻——这是 draft 的核心价值
-2. draft 的 `target_commitish` **必须传 SHA** 而不是分支名，否则 publish 前若主分支前进，tag 会打在错误的 commit 上。`tag_target_sha` 在上面已经捕获了当前 HEAD 的 SHA，step 10 会直接使用
+2. draft 的 `target_commitish` 传主分支名（`tag_target`），publish 时 tag 打在该分支最新 HEAD 上。比 SHA 更直观方便，适合 draft 创建后很快 publish 的场景
 3. 本地如果先 `git tag -a` 会和平台最终创建的 lightweight tag 类型冲突，push 时还会被拦或产生 divergent 状态——干脆完全不碰本地 tag
 
 ### 10. 创建 Gitea / GitHub Release
@@ -915,14 +912,10 @@ REMOTE_URL=$(git remote get-url origin)
 **调用 API**（必须显式传 `target_commitish`，防止默认分支错误）：
 
 ```bash
-# target_commitish 选择：
-#   非 draft 模式 → 传分支名 tag_target（tag 已经 push，API 只是引用已有 tag）
-#   draft 模式 → 传 tag_target_sha（SHA），防止 publish 前分支 HEAD 前进导致 tag 打错 commit
-if [ "$IS_DRAFT" = "true" ]; then
-    TARGET_COMMITISH="${tag_target_sha}"
-else
-    TARGET_COMMITISH="${tag_target}"
-fi
+# target_commitish 统一传分支名 tag_target：
+#   非 draft 模式 → tag 已经 push，API 只是引用已有 tag
+#   draft 模式 → 绑定主分支名，publish 时 tag 打在该分支最新 HEAD 上
+TARGET_COMMITISH="${tag_target}"
 
 curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/releases" \
   -H "Authorization: token ${TOKEN}" \
@@ -937,8 +930,8 @@ curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/releases" \
   }"
 ```
 
-> - **非 draft 模式**：`target_commitish` 必须是 `tag_target`（跨分支模式下 = `main_branch`）。如果 tag 已经 push，Gitea 会直接引用已有 tag；否则按 `target_commitish` 创建 tag。
-> - **draft 模式**：`target_commitish` 必须是 `tag_target_sha`（40 位 SHA）。Gitea 把 draft 和 SHA 绑定，用户手工 publish 时创建 lightweight tag 指向这个 SHA，不受后续 master push 影响。
+> - **非 draft 模式**：`target_commitish` 传 `tag_target`（跨分支模式下 = `main_branch`）。如果 tag 已经 push，Gitea 会直接引用已有 tag；否则按 `target_commitish` 创建 tag。
+> - **draft 模式**：`target_commitish` 同样传 `tag_target`（主分支名）。publish 时 tag 打在该分支最新 HEAD 上，比 SHA 更直观方便。
 
 **已存在时**（HTTP 409 或查询命中）：提示 Release 已存在，输出链接，不重复创建。
 
@@ -967,8 +960,8 @@ if [ "$IS_PRERELEASE" = "true" ]; then
     GH_EXTRA_ARGS+=(--prerelease)
 fi
 if [ "$IS_DRAFT" = "true" ]; then
-    # --draft 创建草稿；--target 传 SHA，防止 publish 前 HEAD 前进
-    GH_EXTRA_ARGS+=(--draft --target "${tag_target_sha}")
+    # --draft 创建草稿；--target 传主分支名
+    GH_EXTRA_ARGS+=(--draft --target "${tag_target}")
 fi
 
 gh release create <version> \
@@ -1070,7 +1063,7 @@ fi
 📌 版本信息
 ├── 版本号：<version>
 ├── 类型：draft（prerelease=<is_prerelease>）
-├── target SHA：<tag_target_sha 前 8 位>
+├── target：<tag_target>（主分支名）
 ├── flow_mode：<direct / cross-branch>
 ├── 版本范围：<from>..<to>
 └── 包含需求：N 个
