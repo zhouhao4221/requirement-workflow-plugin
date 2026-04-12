@@ -343,6 +343,31 @@ gh pr merge ${PR_NUMBER} --<mergeMethod>
 
 ---
 
+## 与 `/req:release` 的关系
+
+**`/req:review-pr merge` 只是完成单个需求的里程碑，不是发版**。具体边界：
+
+1. **migration SQL 在 merge 时不会被归档**
+   合并 PR 后，`docs/migrations/` 下该需求的 SQL 文件仍然保留在原目录，不会被搬到 `released/`。这些 SQL 会等到下一次 `/req:release` 被命令合并到 `docs/migrations/released/<version>.sql`，并 `git rm` 原文件。
+2. **合并到 `developBranch` ≠ 发布**
+   在 git-flow 下，merge 通常是把 feat 分支合到 `developBranch`。发版仍需要跑 `/req:release`，由它走 cross-branch 流程打开 develop → main 的 release PR。
+3. **不要为"发版"手工 tag 或手工建 Release**
+   发版的所有动作（合并 SQL、生成回滚、changelog、tag、平台 Release）都应该由 `/req:release` 原子化完成。v3.0.0+ 默认 draft 模式，命令完成后你在 Gitea/GitHub 手工 publish 才真正发版——这是"双闸门"的核心。
+
+**典型发版流水线**：
+
+```
+REQ-1 /req:review-pr merge     ← 单需求合并（不发版）
+REQ-2 /req:review-pr merge     ← 单需求合并（不发版）
+REQ-3 /req:review-pr merge     ← 单需求合并（不发版）
+                ↓
+        /req:release            ← 真正发版，自动推导版本号 + draft
+                ↓
+        在 Gitea/GitHub 点 Publish
+```
+
+---
+
 ## 用户输入
 
 $ARGUMENTS

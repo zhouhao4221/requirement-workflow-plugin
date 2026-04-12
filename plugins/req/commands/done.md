@@ -312,6 +312,26 @@ mv $REQ_COMPLETED/REQ-001-*.md $REQ_ACTIVE/
 
 数据可用于团队效能分析。
 
+---
+
+## 与 `/req:release` 的关系
+
+**`/req:done` 只归档需求，不触发发版**。两条命令对应完全不同的动作：
+
+| 命令 | 动作 | 可见性 |
+|------|------|--------|
+| `/req:done` | 本地移动 `active/` → `completed/`，更新 INDEX | 仅团队内部 |
+| `/req:release` | 合并 SQL + 生成回滚 + changelog + tag + 平台 Release | **对外发布** |
+
+**完成一批需求后发版的正确流程**：
+
+1. 每个需求 `/req:done` 归档
+2. 累积到想发版时，跑 `/req:release`（v3.0.0+ 可不传版本号，自动推导）
+3. `/req:release` **默认创建 draft**，命令跑完后需要你手工去 Gitea/GitHub 点 Publish 才真正对外发布
+4. 如果这些需求带了 `docs/migrations/*.sql`，会在 `/req:release` step 6 被合并到 `docs/migrations/released/<version>.sql`，原文件被 `git rm`
+
+**注意**：`/req:done` **不会**自动把 migration SQL 归档到 `released/`。归档是 release 命令的职责，不是 done 的。如果你在 done 之后看到需求的 migration 文件还在 `docs/migrations/` 下，那是正常的——它们在等下一次 release。
+
 ## 用户输入
 
 $ARGUMENTS
