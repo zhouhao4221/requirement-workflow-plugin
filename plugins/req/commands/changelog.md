@@ -42,24 +42,62 @@ if not version:
 
 ### 2. 确定 Git 范围
 
+> **被 `/req:release` 调用时**：`/req:release` 会显式传入 `--from`，跳过下面的自动检测链，draft 模式对本步无影响。
+> **用户手动调用时**：走下方 draft-aware 回退链。
+
 ```bash
 # --to 参数，默认 HEAD
 TO_REF=${to:-HEAD}
-
-# --from 参数，默认上一个 tag
-if [ -z "$FROM_REF" ]; then
-    # 自动检测上一个 tag
-    FROM_REF=$(git describe --tags --abbrev=0 $TO_REF^ 2>/dev/null)
-fi
-
-if [ -z "$FROM_REF" ]; then
-    # 没有任何 tag，使用第一个 commit
-    FROM_REF=$(git rev-list --max-parents=0 HEAD)
-    echo "⚠️ 未找到 git tag，将从仓库首次提交开始"
-fi
-
-echo "📌 版本范围：$FROM_REF..$TO_REF"
 ```
+
+**FROM_REF 解析优先级**（v3.0.0+ 新增 draft 感知）：
+
+1. `--from` 参数显式指定 → 直接使用
+2. 最近一个平台 Release（含 draft）的 target SHA → 仅当 `repoType in {gitea, github}` 且能成功调用 API 时
+3. `git describe --tags --abbrev=0 $TO_REF^` → 最近一个 local git tag（原有行为）
+4. 仓库首次 commit → 无任何 tag 时的兜底
+
+```python
+from_ref = args.from_ref  # 1. 显式参数
+
+if not from_ref:
+    # 2. 查询平台最近一次 Release（含 draft），用它的 target SHA 作为范围起点
+    #    避免 draft 未 publish 导致 git describe 取到上上个 tag 的 bug
+    repo_type = read_settings("branchStrategy.repoType", "other")
+    if repo_type in ("gitea", "github"):
+        latest_release = fetch_latest_release(repo_type, include_draft=True)
+        if latest_release:
+            from_ref = latest_release["target_sha"]
+            print(f"📌 使用平台最近 Release `{latest_release['name']}` 的 target SHA 作为起点（含 draft）")
+
+if not from_ref:
+    # 3. 回退到 git describe
+    from_ref = run(f"git describe --tags --abbrev=0 {TO_REF}^", allow_fail=True)
+
+    # 额外检测：存在未 publish 的 draft？如果是，警告用户 changelog 范围可能和预期不一致
+    if from_ref:
+        repo_type = read_settings("branchStrategy.repoType", "other")
+        if repo_type in ("gitea", "github"):
+            pending_drafts = fetch_pending_drafts(repo_type)
+            if pending_drafts:
+                print(f"⚠️  检测到 {len(pending_drafts)} 个未 publish 的 draft release：")
+                for d in pending_drafts:
+                    print(f"     - {d['name']}（target SHA: {d['target_sha'][:8]}）")
+                print(f"   当前使用 git tag `{from_ref}` 作为起点，draft release 不会影响本次范围。")
+                print(f"   如果本次 changelog 预期从 draft 之后开始，请显式传 --from=<draft-target-sha>")
+                print()
+
+if not from_ref:
+    # 4. 没有任何 tag，使用第一个 commit
+    from_ref = run("git rev-list --max-parents=0 HEAD")
+    print("⚠️ 未找到 git tag，将从仓库首次提交开始")
+
+print(f"📌 版本范围：{from_ref}..{TO_REF}")
+```
+
+**为什么要 draft 感知**：v3.0.0 起 `/req:release` 默认 draft，不再本地打 tag。如果用户先跑 `/req:release v1.2.0`（draft 未 publish）→ 后跑 `/req:changelog v1.3.0`，原来的 `git describe` 会返回更早的 tag（比如 `v1.1.0`），导致 v1.3.0 的 changelog 多包含了一整个版本的 commits。新回退链优先读平台 Release（含 draft）的 SHA，或在走 git tag 回退时警告用户。
+
+**repoType=other 的行为**：仍走原有 `git describe` 链，无 draft 感知（`other` 类型无 API 可查）。
 
 ### 3. 读取 Git 提交记录
 
