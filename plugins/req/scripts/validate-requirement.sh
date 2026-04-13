@@ -6,7 +6,9 @@
 # 仅对 docs/requirements/ 目录下的需求文档（REQ-XXX、QUICK-XXX）进行验证
 # 根据需求类型检查对应模板的所有必须章节
 
-FILE_PATH="$1"
+# 从 stdin JSON 中提取文件路径（PostToolUse hook 通过 stdin 传入工具信息）
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 
 # 空路径或文件不存在，静默跳过
 if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then

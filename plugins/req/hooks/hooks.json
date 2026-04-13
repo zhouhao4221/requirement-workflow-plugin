@@ -39,12 +39,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate-requirement.sh \"$CLAUDE_FILE_PATH\"",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate-requirement.sh",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sync-cache.sh \"$CLAUDE_FILE_PATH\"",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sync-cache.sh",
             "timeout": 5
           }
         ]
@@ -54,12 +54,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate-requirement.sh \"$CLAUDE_FILE_PATH\"",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate-requirement.sh",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sync-cache.sh \"$CLAUDE_FILE_PATH\"",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sync-cache.sh",
             "timeout": 5
           }
         ]
