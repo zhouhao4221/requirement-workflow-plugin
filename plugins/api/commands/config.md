@@ -2,7 +2,6 @@
 description: API 配置管理 - 初始化和管理 Swagger 数据源配置
 argument-hint: "[init|list|set] [参数]"
 allowed-tools: Read, Write, Edit, Bash(python3:*)
-model: claude-sonnet-4-6
 ---
 
 # API 配置管理

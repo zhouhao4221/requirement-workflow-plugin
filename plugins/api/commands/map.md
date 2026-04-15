@@ -2,7 +2,6 @@
 description: 字段映射 - 分析接口请求/响应字段并映射到前端类型
 argument-hint: "<接口路径>"
 allowed-tools: Read, Glob, Grep, Bash(python3:*)
-model: claude-opus-4-6
 ---
 
 # 字段映射

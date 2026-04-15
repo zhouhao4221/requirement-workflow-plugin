@@ -2,7 +2,6 @@
 description: 月报 - 月度工作总结与统计分析
 argument-hint: "[--month=YYYY-MM]"
 allowed-tools: Read, Glob, Grep, Bash(git log:*, git diff:*, git shortlog:*)
-model: claude-sonnet-4-6
 ---
 
 # 生成月报

@@ -2,7 +2,6 @@
 description: 导入 Swagger - 解析 OpenAPI 文档并展示接口概览
 argument-hint: "[--file=路径|--url=URL]"
 allowed-tools: Read, Write, Edit, Glob, Bash(python3:*, curl:*)
-model: claude-sonnet-4-6
 ---
 
 # 导入 Swagger

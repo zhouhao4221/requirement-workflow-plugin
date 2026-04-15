@@ -2,7 +2,6 @@
 description: 快速修复 - 创建小bug修复或小功能的快速需求
 argument-hint: "[标题] [--module=模块名]"
 allowed-tools: Read, Write, Edit, Glob, Grep
-model: claude-sonnet-4-6
 ---
 
 # 快速修复需求

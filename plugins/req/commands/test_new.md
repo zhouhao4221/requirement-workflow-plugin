@@ -2,7 +2,6 @@
 description: 创建测试 - 为新功能编写自动化测试用例
 argument-hint: "[REQ-XXX] [--type=UT|API|E2E]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-model: claude-opus-4-6
 ---
 
 > **重要**：本命令的测试文件位置、运行命令、代码示例均从项目 CLAUDE.md 的「测试规范」章节读取，不内置任何项目细节。

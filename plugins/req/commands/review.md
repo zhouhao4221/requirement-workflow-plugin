@@ -2,7 +2,6 @@
 description: 需求评审 - 提交或记录评审结果
 argument-hint: "[REQ-XXX] [pass|reject] [--comment=评审意见]"
 allowed-tools: Read, Write, Edit, Glob
-model: claude-sonnet-4-6
 ---
 
 # 需求评审

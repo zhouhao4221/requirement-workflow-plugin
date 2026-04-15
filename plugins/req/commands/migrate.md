@@ -2,7 +2,6 @@
 description: 迁移需求 - 将本地需求迁移到全局缓存
 argument-hint: "<project-name>"
 allowed-tools: Read, Write, Edit, Glob, Bash(ls:*, cp:*, mkdir:*)
-model: claude-sonnet-4-6
 ---
 
 # 迁移需求

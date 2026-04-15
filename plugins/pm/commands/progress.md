@@ -1,7 +1,6 @@
 ---
 description: 项目总进度 - 全局视角展示需求进度和里程碑
 allowed-tools: Read, Glob, Grep, Bash(git log:*, git tag:*)
-model: claude-sonnet-4-6
 ---
 
 # 项目总进度

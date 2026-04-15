@@ -2,7 +2,6 @@
 description: 需求测试 - 综合测试验证（回归 + 新建 + 交互验证）
 argument-hint: "[REQ-XXX]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-model: claude-sonnet-4-6
 ---
 
 > **重要**：本命令的测试文件位置、运行命令、代码示例均从项目 CLAUDE.md 的「测试规范」章节读取，不内置任何项目细节。

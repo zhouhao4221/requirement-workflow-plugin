@@ -2,7 +2,6 @@
 description: 项目数据统计 - 需求、代码、贡献者等多维度统计分析
 argument-hint: "[--from=YYYY-MM-DD] [--to=YYYY-MM-DD]"
 allowed-tools: Read, Glob, Grep, Bash(git log:*, git diff:*, git shortlog:*)
-model: claude-sonnet-4-6
 ---
 
 # 项目数据统计

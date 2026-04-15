@@ -2,7 +2,6 @@
 description: 智能开发 - AI 分析意图，自动选择流程，生成方案并执行
 argument-hint: "<描述>"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*)
-model: claude-opus-4-6
 ---
 
 # 智能开发
