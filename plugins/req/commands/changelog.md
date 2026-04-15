@@ -2,7 +2,7 @@
 description: 生成版本说明 - 基于 Git 记录生成 Changelog
 argument-hint: "<version> [--from=<tag|commit>] [--to=<tag|commit>]"
 allowed-tools: Read, Write, Edit, Glob, Bash(git:*)
-model: claude-opus-4-6
+model: claude-sonnet-4-6
 ---
 
 # 生成版本说明

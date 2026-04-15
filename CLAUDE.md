@@ -81,9 +81,9 @@ model: claude-sonnet-4-6              # 命令使用的模型
 
 | 模型 | 适用场景 | 典型命令 |
 |------|---------|---------|
-| `claude-haiku-4-5-20251001` | 纯读取、列表展示、帮助信息 | `/req`、`/req:status`、`/req:show`、`/req:prd`、`/req:help`、`/pm:standup`、`/pm:export`、`/api:help` |
-| `claude-sonnet-4-6` | 标准文档创建/编辑、Git 操作、数据统计 | `/req:new`、`/req:edit`、`/req:commit`、`/req:pr`、`/pm:stats`、`/api:config` |
-| `claude-opus-4-6` | 深度代码分析、方案生成、AI 审查 | `/req:dev`、`/req:fix`、`/req:do`、`/req:review-pr`、`/req:release`、`/pm:weekly`、`/pm:plan`、`/api:gen` |
+| `claude-haiku-4-5-20251001` | 纯读取、列表展示、机械操作、帮助信息 | `/req`、`/req:status`、`/req:show`、`/req:done`、`/req:prd`、`/req:update-template`、`/req:help`、`/pm:pm`、`/pm:standup`、`/pm:export`、`/api:search`、`/api:help` |
+| `claude-sonnet-4-6` | 标准文档创建/编辑、Git 操作、数据统计、结构化报告生成 | `/req:new`、`/req:edit`、`/req:commit`、`/req:pr`、`/req:changelog`、`/pm:stats`、`/pm:weekly`、`/pm:monthly`、`/api:config` |
+| `claude-opus-4-6` | 深度代码分析、方案生成、AI 审查 | `/req:dev`、`/req:fix`、`/req:do`、`/req:review-pr`、`/req:release`、`/pm:milestone`、`/pm:plan`、`/api:gen` |
 
 **allowed-tools 约束**：每个命令仅允许其必需的工具集，只读命令不能触发 Write/Edit/Bash，防止误操作。
 
