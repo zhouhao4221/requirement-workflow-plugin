@@ -82,11 +82,11 @@ matched_reqs = match_index(index, keywords)
 ```
 
 ```
-# 第 3 步：命中时，仅读该需求的「十、实现方案」中的文件改动清单（~1k token）
+# 第 3 步：命中时，仅读该需求的「十一、实现方案」中的文件改动清单（~1k token）
 #   未命中 → 跳过，不额外消耗
 if matched_reqs:
     for req in matched_reqs[:2]:  # 最多读 2 个
-        file_list = read_section(req, "10.3 文件改动清单")
+        file_list = read_section(req, "11.3 文件改动清单")
 ```
 
 **命中时展示**：
