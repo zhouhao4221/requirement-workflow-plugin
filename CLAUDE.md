@@ -148,6 +148,15 @@ model: claude-sonnet-4-6              # 命令使用的模型
 - `/req:review-pr fetch-comments` - 拉取 PR 评论，AI 生成修改清单并应用到代码
 - `/req:review-pr merge` - 合并 PR，自动清理分支
 
+**Issue 命令（readonly 可用，不触发缓存同步）：**
+- `/req:issue new <标题> [--body] [--labels=a,b] [--assignees=u1] [--req=REQ-XXX]` - 创建 issue，fuzzy match 仓库真实标签，自动附关联需求上下文
+- `/req:issue edit #N [--title] [--body] [--add-labels] [--remove-labels] [--assignees]` - 修改 issue 字段（Gitea 标签走独立端点）
+- `/req:issue close #N [--comment=] [--reason=]` - 关闭 issue，可附告别留言；`--reason` 仅 GitHub 支持
+- `/req:issue reopen #N` - 重开 issue
+- `/req:issue list [--state=] [--labels=] [--assignee=@me|user] [--limit=20] [--page=1]` - 列出 issue（自动过滤 PR）
+- `/req:issue show #N` - 查看 issue 详情和所有评论
+- `/req:issue comment #N <文本>` / `--list` - 添加评论或列出评论
+
 **版本管理命令：**
 - `/req:commit [消息]` - 规范提交，自动关联需求编号，检查分支合规性（readonly 可用）
 - `/req:changelog <version> [--from=<tag|commit>] [--to=<tag|commit>]` - 生成版本升级说明（readonly 可用）

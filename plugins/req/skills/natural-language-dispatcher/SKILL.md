@@ -6,10 +6,12 @@ description: |
   - 修复与开发：修 bug、修复报错、优化/重构/升级/统一代码、快速修复、小功能
   - 状态流转：开发/测试/评审通过/评审驳回/完成/归档需求（必须带编号）
   - 版本 PR：规范提交、创建 PR、审查 PR、合并 PR、拉 PR 评论
+  - Issue 操作：提/建/开 issue、评论讨论、关闭/重开/查看/列出 issue
   - URL 识别：识别 issue/PR 链接并映射到对应命令（如 owner/repo/issues/169、
     owner/repo/pulls/158、https://github.com/owner/repo/pull/1）
   示例："新增需求 用户积分管理"、"修改025需求"、"修个登录超时的 bug"、
   "优化订单查询性能"、"开始开发025"、"025 评审通过"、"完成 025"、"创建 PR"、"审查 PR"、
+  "提个 issue 登录超时"、"给 #42 回复 已修复"、"关闭 issue 42"、
   "修 pipexerp/diciai/issues/169"、"审查 pipexerp/diciai/pulls/158"。
 ---
 
@@ -252,11 +254,84 @@ description: |
 
 ---
 
-## 五、Git 平台 URL 识别
+## 五、Issue 操作
+
+**目的**：用户用自然语言创建 / 编辑 / 关闭 / 评论 issue 时，自动映射到 `/req:issue` 子命令。
+
+### 编号解析
+
+issue 编号支持 `#42` / `42` / `issue 42` / `issue #42` 四种写法，都归一为 `42`。
+
+### 5.1 创建 issue → `/req:issue new`
+
+**触发**（同时满足）：
+1. 动词："提"、"建"、"开"、"新建"、"创建"、"报"
+2. 对象：**"issue"** 或 **"bug"**（带"报"字时）
+
+**示例**：
+- "提个 issue: 登录超时" → `/req:issue new 登录超时`
+- "新建 issue 导出 Excel 乱码" → `/req:issue new 导出 Excel 乱码`
+- "开 issue 积分排行榜排序异常" → `/req:issue new 积分排行榜排序异常`
+- "报个 bug：订单分页数据重复" → `/req:issue new 订单分页数据重复`
+- "给 REQ-001 建 issue 讨论实现方案" → `/req:issue new 讨论实现方案 --req=REQ-001`
+
+**不触发**：
+- "这个 bug 提给谁？"（提问）
+- "怎么提 issue"（询问用法，走 `/req:help`）
+
+### 5.2 评论 / 讨论 → `/req:issue comment`
+
+**触发**（同时满足）：
+1. 动词："评论"、"回复"、"回帖"、"留言"、"追评"、"补一句"
+2. issue 编号
+
+**示例**：
+- "给 #42 回复 已修复" → `/req:issue comment 42 已修复`
+- "在 issue 170 评论：已定位到 auth.ts" → `/req:issue comment 170 已定位到 auth.ts`
+- "#42 追评：测试环境验证通过" → `/req:issue comment 42 测试环境验证通过`
+- "看下 #42 的讨论" / "列出 #42 的评论" → `/req:issue comment 42 --list`
+
+### 5.3 关闭 → `/req:issue close`
+
+**触发**：
+- "关闭 issue 42" / "close #42" / "把 issue 42 关了"
+- "关闭 issue 42 并留言 xxx" → `/req:issue close 42 --comment=xxx`
+
+**不触发**：
+- "关闭需求 REQ-042"（走 `/req:done`，不是 issue）
+
+### 5.4 重开 → `/req:issue reopen`
+
+**触发**："重开 issue 42" / "reopen #42" / "把 issue 42 打开"
+
+### 5.5 查看详情 → `/req:issue show`
+
+**触发**：
+- "看下 issue 42" / "issue 42 详情" / "展示 #42"
+- "issue 42 有哪些评论" → `/req:issue show 42`（show 会包含评论列表）
+
+### 5.6 列表 → `/req:issue list`
+
+**触发**：
+- "列出 issue" / "列表 issue" / "open 的 issue" → `/req:issue list --state=open`
+- "已关闭 issue" → `/req:issue list --state=closed`
+- "我的 issue" / "分给我的 issue" → `/req:issue list --assignee=@me`
+- "紧急 issue" / "bug issue" → `/req:issue list --labels=<匹配词>`
+
+### 5.7 编辑 → `/req:issue edit`
+
+**触发**：
+- "给 issue 42 加标签 bug" → `/req:issue edit 42 --add-labels=bug`
+- "改 issue 42 标题为 xxx" → `/req:issue edit 42 --title=xxx`
+- "把 issue 42 指派给 @haiqing" → `/req:issue edit 42 --assignees=haiqing`
+
+---
+
+## 六、Git 平台 URL 识别
 
 **目的**：用户直接粘贴 issue / PR 链接时，自动识别类型并映射到对应命令。
 
-### 5.1 识别模式
+### 6.1 识别模式
 
 统一正则（支持带协议头和纯路径两种形式）：
 
@@ -277,7 +352,7 @@ description: |
 
 `pull` 和 `pulls` 都识别为 PR（GitHub 用单数，Gitea 用复数）。
 
-### 5.2 仓库匹配检查
+### 6.2 仓库匹配检查
 
 解析出 `owner/repo` 后，与当前仓库对比：
 
@@ -293,7 +368,7 @@ git remote get-url origin
   💡 请切换到对应仓库目录后再执行
   ```
 
-### 5.3 Issue URL → 创建/修复类命令
+### 6.3 Issue URL → 创建/修复/查看类命令
 
 **URL 形式**：`.../issues/<N>`
 
@@ -308,6 +383,9 @@ git remote get-url origin
    2. 创建正式需求    → /req:new --from-issue=#169
    3. 创建快速修复    → /req:new-quick --from-issue=#169
    4. 智能开发        → /req:do --from-issue=#169
+   5. 查看 issue 详情 → /req:issue show 169
+   6. 评论该 issue    → /req:issue comment 169 <文本>
+   7. 关闭该 issue    → /req:issue close 169
 ```
 
 #### URL + 动词（直接映射）
@@ -318,8 +396,12 @@ git remote get-url origin
 | "创建需求 .../issues/169" / "从 .../issues/169 新建需求" | `/req:new --from-issue=#169` |
 | "快速修复 .../issues/169" | `/req:new-quick --from-issue=#169` |
 | "处理 .../issues/169" / "做一下 .../issues/169" | `/req:do --from-issue=#169` |
+| "看下 .../issues/169" / "展示 .../issues/169" | `/req:issue show 169` |
+| "评论 .../issues/169 xxx" / "回复 .../issues/169 xxx" | `/req:issue comment 169 xxx` |
+| "关闭 .../issues/169" / "close .../issues/169" | `/req:issue close 169` |
+| "重开 .../issues/169" / "reopen .../issues/169" | `/req:issue reopen 169` |
 
-### 5.4 PR URL → 审查/合并类命令
+### 6.4 PR URL → 审查/合并类命令
 
 **URL 形式**：`.../pull/<N>` 或 `.../pulls/<N>`
 
@@ -364,13 +446,13 @@ gh pr view --json number 2>/dev/null  # GitHub
 | "拉评论 .../pulls/158"、"应用评论 .../pulls/158" | `/req:review-pr fetch-comments` |
 | "合并 .../pulls/158"、"merge .../pulls/158" | `/req:review-pr merge` |
 
-### 5.5 处理优先级
+### 6.5 处理优先级
 
 同一条消息中**多种信号共存**时的优先级：
 
-1. **动词 + URL**（最明确）→ 直接按动词映射（§5.3 / §5.4 的第二子节）
+1. **动词 + URL**（最明确）→ 直接按动词映射（§6.3 / §6.4 的第二子节）
 2. **仅 URL**（需用户选择）→ 展示选项列表
-3. **动词 + 需求编号**（无 URL）→ 走 §一~§四 的原有规则
+3. **动词 + 需求编号**（无 URL）→ 走 §一~§五 的原有规则
 
 例："修 pipexerp/diciai/issues/169" → 动词"修" + Issue URL → `/req:fix --from-issue=#169`，不再询问其它选项。
 
