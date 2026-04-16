@@ -198,6 +198,36 @@ QUICK 模板更简洁：问题描述 → 实现方案 → 验证方式。
 
 AI 会分析粒度并建议拆分方案（只读，不创建文档）。
 
+### 2.4 从 Git issue 创建需求
+
+如果团队使用 Gitea / GitHub issue 作为需求入口，可以直接从 issue 创建需求文档，省去二次录入：
+
+```
+/req:new --from-issue=#12           # 正式需求
+/req:new-quick --from-issue=#5      # 快速修复
+/req:do --from-issue=#42            # 无文档，仅把 issue 内容作为描述跑智能开发
+```
+
+**AI 的行为**：
+1. 按 `branchStrategy.repoType` 调用对应 API 拉取 issue（Gitea → REST API + `giteaToken`；GitHub → `gh issue view`）
+2. issue 标题作为需求默认标题，正文作为「问题与现状」的初始输入
+3. 创建的文档元信息 `issue` 字段记录 `#N`，用于后续自动关联
+
+**Gitea 仓库的前提**：`branchStrategy.giteaUrl` 和 `giteaToken` 必须配置（见 1.8）。AI **不会**从 git remote SSH 地址猜测 HTTPS URL，必须走配置。
+
+#### issue 与分支/提交的自动关联
+
+有 issue 关联时，整条链路都会自动带上 issue 编号：
+
+| 环节 | 表现 |
+|------|------|
+| `/req:dev` 创建分支 | 末尾自动追加 `-iN`（如 `feat/REQ-001-user-points-i12`） |
+| `/req:commit` 提交代码 | commit message 末尾自动追加 `closes #N`（PR 合并时 Git 平台自动关闭 issue） |
+| `/req:done` 归档 | 询问是否通过 API 直接关闭 issue |
+| `/req:do --from-issue` | 创建带 `-iN` 的分支；完成时询问关闭 issue |
+
+**读取优先级**：需求文档 `issue` 字段 > 分支名 `-iN` 后缀。这样即使是无文档的 `/req:do`，commit 和 done 也能从分支名推断 issue 编号。
+
 ---
 
 ## 三、评审流程
@@ -269,9 +299,11 @@ AI 会分析粒度并建议拆分方案（只读，不创建文档）。
 再次执行 `/req:dev` 时，直接切换到已记录的分支。
 
 分支命名规则（前缀可通过策略配置自定义）：
-- REQ → `feat/REQ-XXX-<english-slug>`
-- QUICK → `fix/QUICK-XXX-<english-slug>`
+- REQ → `feat/REQ-XXX-<english-slug>[-iN]`
+- QUICK → `fix/QUICK-XXX-<english-slug>[-iN]`
+- `/req:do --from-issue` → `<prefix><slug>-iN`（前缀由 AI 分析意图决定）
 - 紧急修复 → `hotfix/<english-slug>`（通过 `/req:branch hotfix` 创建）
+- `-iN`：可选的 issue 后缀（如 `-i12`），当需求关联了 Git 平台 issue 时自动追加，用于后续命令识别关联（详见 2.8）
 
 ### 4.2.1 分支策略命令
 

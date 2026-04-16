@@ -117,9 +117,10 @@ docs/requirements/modules/<模块名>.md
 2. 分支名格式：
    - REQ → `feat/REQ-XXX-<slug>`
    - QUICK → `fix/QUICK-XXX-<slug>`
-3. 展示分支名，等待用户确认（可修改）
-4. 创建分支 `git checkout -b <branch> <主分支>`
-5. 将分支名写入需求文档元信息 `branch` 字段
+3. 若需求文档元信息 `issue` 字段非 `-` 且非空（如 `#12`），在分支名末尾追加 `-i<N>`（如 `-i12`）
+4. 展示分支名，等待用户确认（可修改）
+5. 创建分支 `git checkout -b <branch> <主分支>`
+6. 将分支名写入需求文档元信息 `branch` 字段
 
 ### 4. 分支命名规则
 
@@ -130,6 +131,7 @@ docs/requirements/modules/<模块名>.md
 | slug | 英文翻译，lowercase kebab-case |
 | 长度 | slug 部分最多 5 个单词 |
 | 字符 | 仅 `[a-z0-9-/]` |
+| issue 后缀 | 当需求关联了 Git 平台 issue 时，末尾追加 `-i<N>`（如 `feat/REQ-001-user-points-i12`） |
 
 ---
 

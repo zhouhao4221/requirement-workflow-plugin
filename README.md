@@ -77,6 +77,7 @@ claude plugins uninstall req@devflow  # 卸载插件
 - **分支管理**：GitHub Flow / Git Flow / Trunk-Based 三种策略
 - **前后端协作**：前端 REQ 描述交互逻辑，dev 阶段自动匹配后端接口
 - **PR 审查与合并**：AI 代码审查、自动提交评论、一键合并
+- **Git issue 集成**：`--from-issue=#N` 直接从 Gitea/GitHub issue 创建需求，分支/commit/done 全链路自动关联和关闭 issue
 - **跨仓库共享**：前后端多仓库共享同一套需求（本地优先 + 全局缓存）
 - **规范提交**：自动关联需求编号的 Conventional Commits
 - **版本说明**：基于 Git 记录自动生成 Changelog
