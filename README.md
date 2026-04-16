@@ -1,5 +1,7 @@
 # DevFlow
 
+🌐 [English](README.en.md) | [中文](README.md) | [한국어](README.ko.md)
+
 AI 驱动的软件全生命周期管理工具集，覆盖需求分析、开发引导、测试验证、项目管理、API 对接等完整流程。基于 Claude Code 插件体系构建。
 
 ## 插件列表
@@ -84,23 +86,32 @@ claude plugins uninstall req@devflow  # 卸载插件
 
 ### 快速开始
 
+**新项目只需两步启动**（插件会在每次会话开始时主动引导，缺一不可）：
+
 ```bash
-# 1. 初始化项目
+# 1. 初始化项目（创建 docs/requirements/、生成 PRD、绑定仓库）
 /req:init my-project
 
-# 2. 创建需求（AI 提问收集信息 → 一次性生成文档）
+# 2. 配置分支策略（GitHub Flow / Git Flow / Trunk-Based + 仓库托管类型）
+/req:branch init
+```
+
+随后进入日常工作流：
+
+```bash
+# 3. 创建需求（AI 提问收集信息 → 一次性生成文档）
 /req:new 用户积分系统
 
-# 3. 评审
+# 4. 评审
 /req:review pass
 
-# 4. 开发（AI 生成实现方案，按分层架构引导）
+# 5. 开发（AI 生成实现方案，按分层架构引导）
 /req:dev
 
-# 5. 测试
+# 6. 测试
 /req:test
 
-# 6. 完成归档
+# 7. 完成归档
 /req:done
 ```
 

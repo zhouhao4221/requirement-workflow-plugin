@@ -1,5 +1,7 @@
 # 使用教程
 
+🌐 [English](tutorial.en.md) | [中文](tutorial.md) | [한국어](tutorial.ko.md)
+
 本教程以一个完整示例，演示从安装插件到完成需求的全流程。
 
 > 示例场景：为一个后端项目开发「用户积分规则管理」功能。
@@ -7,6 +9,13 @@
 ---
 
 ## 一、安装与初始化
+
+> **两步启动**：插件安装后，每次打开 Claude Code 会话时，若检测到当前仓库未初始化或未配置分支策略，会自动在会话开头输出引导提示。完成下面两步后提示自动消失：
+>
+> 1. `/req:init <project-name>` — 初始化需求项目
+> 2. `/req:branch init` — 配置分支策略
+>
+> 之后即可用 `/req:new` 创建第一个需求。
 
 ### 1.1 安装插件
 
@@ -54,11 +63,13 @@ claude plugins list
 
 > **后续修改**：直接编辑项目 CLAUDE.md 的「项目架构」章节即可。
 
-### 1.4 配置分支策略（可选）
+### 1.4 配置分支策略（强烈推荐）
 
 ```
 /req:branch init
 ```
+
+> 未配置时，会话启动引导会持续提示；配置完成后提示自动消失。不配置也能用，使用默认行为（硬编码 `feat/` / `fix/` 前缀、不自动创建 PR）。
 
 选择团队的分支管理策略：
 - **GitHub Flow**（推荐）：所有分支从 main 拉，合回 main
@@ -70,7 +81,7 @@ claude plugins list
 - **Gitea**：`/req:pr` 时自动调用 Gitea REST API 创建 PR
 - **其他**：仅展示 `git merge` 合并命令
 
-配置后 `/req:dev`、`/req:commit`、`/req:done`、`/req:pr` 会自动遵循策略。不配置也能用，使用默认行为。
+配置后 `/req:dev`、`/req:commit`、`/req:done`、`/req:pr` 会自动遵循策略。
 
 ### 1.5 重新初始化
 
