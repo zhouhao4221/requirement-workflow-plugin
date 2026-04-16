@@ -626,6 +626,137 @@ QUICK 做到一半发现范围变大，可以升级为正式需求：
 
 ---
 
+## 十三、自然语言与一键模式
+
+### 13.1 自然语言指令
+
+无需记忆斜杠命令，直接用中文描述意图，插件会自动映射到对应命令。
+
+**需求文档**
+
+```
+新增需求 用户积分管理          → /req:new 用户积分管理
+新建后端需求，做订单导出        → /req:new 订单导出 --type=后端
+修改025需求，增加导出功能      → /req:edit REQ-025
+```
+
+**修复与开发（无文档）**
+
+```
+修个登录超时的 bug            → /req:fix 登录超时
+修 #42 这个 bug               → /req:fix --from-issue=#42
+优化订单查询性能              → /req:do 优化订单查询性能
+重构用户服务层                → /req:do 重构用户服务层
+升级 Go 到 1.23               → /req:do 升级 Go 到 1.23
+快速改一下分页默认值          → /req:new-quick 分页默认值
+```
+
+**状态流转**（必须带编号）
+
+```
+开始开发025                   → /req:dev REQ-025
+025 开始测试                  → /req:test REQ-025
+025 评审通过 / 通过评审 025    → /req:review pass
+025 评审驳回                  → /req:review reject
+完成025 / 025 做完了           → /req:done REQ-025
+```
+
+**版本与 PR**
+
+```
+规范提交                      → /req:commit
+创建 PR / 提 PR                → /req:pr
+审查 PR / review PR           → /req:review-pr review
+拉 PR 评论                    → /req:review-pr fetch-comments
+合并 PR                       → /req:review-pr merge
+```
+
+**直接粘贴 Git 平台 URL**（自动识别 issue / PR）
+
+```
+修复 owner/repo/issues/169    → /req:fix --from-issue=#169
+创建需求 owner/repo/issues/12  → /req:new --from-issue=#12
+审查 owner/repo/pulls/158     → /req:review-pr review（需先切到 PR 对应分支）
+```
+
+单独粘贴 URL（不带动词）时，会展示选项让你选操作。
+
+**编号解析规则**
+
+| 输入 | 解析结果 |
+|------|---------|
+| `REQ-025` / `REQ025` | REQ-025 |
+| `QUICK-003` / `QUICK003` | QUICK-003 |
+| 纯数字 `025` / `25` | REQ-025（补零到 3 位） |
+| `#42` / `issue 42` | `--from-issue=#42` |
+
+**不会触发的情况**
+
+- 查询 / 展示类："看一下025" 走 `/req:show`
+- 讨论 / 提问："这个 bug 怎么修"、"是不是该重构了"、"怎么新增需求"
+- 关键词缺失必要信息："修改需求"无编号、"优化一下"无对象、"完成"无编号
+- 已用斜杠命令开头（`/req:`、`/pm:`、`/api:`）
+- URL 指向其他仓库（与 `git remote` 不匹配）
+
+### 13.2 一键修复（`--auto`）
+
+`/req:fix --auto` 跳过所有确认交互，自动串联 commit → push → PR。
+
+**触发方式**
+
+```
+/req:fix 登录超时 --auto                    # 显式
+修下 Excel 导出中文乱码，不用确认            # 自然语言
+一键修复登录超时                            # 自然语言
+直接修 Excel 导出乱码并发 PR                # 自然语言
+自动修 #42                                  # 自然语言 + issue
+```
+
+自然语言触发词：`一键修` / `自动修` / `修完直接发 PR` / `改完自动提交` / `不用确认` / `别问我` / `自动来` / `跑完再说`。
+
+**会自动跳过的确认**
+
+| 确认点 | 跳过方式 |
+|-------|---------|
+| 修复方案确认 | 命令内置跳过 |
+| `git commit` 前的原生确认弹框 | `.claude/.req-auto` marker（Hook 放行） |
+| `/req:commit` 的类型交互式选择 | AI 自动推断为「修复」 |
+| `--from-issue` 时的关闭 issue 询问 | 默认关闭 |
+| `/req:pr` 创建后的分支清理询问 | 默认保留 |
+| 手工串联 commit → push → PR | 自动执行 |
+
+**无法跳过**（Claude Code harness 层，需本地权限设置）
+
+- 首次调用 Bash / Write / Edit 的工具权限确认
+- Plan Mode approval（若开启 Plan Mode）
+
+**不会跳过**（安全红线）
+
+- 保护分支（`main` / `master` / `develop`）上的提交 —— 必须先切到开发分支
+- AI 对代码的实际分析与修改（核心执行，非确认）
+
+**底层机制**
+
+`--auto` 启动时创建 `.claude/.req-auto` 标记文件（mtime 10 分钟 TTL）。PreToolUse confirm hook 检测到有效 marker 时直接放行，无需手动确认 `git commit` 弹框。流程结束时清理标记；异常退出时 TTL 自动失效，避免残留长期放行。
+
+`.claude/.req-auto` 已加入 `.gitignore`，不会入库。
+
+**典型工作流**
+
+```
+用户：修下 Excel 导出中文乱码，不用确认
+   ↓
+AI：🧠 识别：/req:fix Excel 导出中文乱码 --auto
+    ⚙️ --auto 会自动跳过：[能力边界清单]
+    🔒 无法跳过：[Claude Code harness 权限]
+    🛑 不会跳过：[保护分支、实际代码修改]
+    开始执行？
+   ↓
+定位问题 → 修改代码 → git commit → git push → 创建 PR
+```
+
+---
+
 ## 常用命令速查
 
 | 场景 | 命令 |

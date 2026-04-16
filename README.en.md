@@ -55,6 +55,8 @@ Covers the full lifecycle from analysis, review, development, testing, to archiv
 
 ### Core features
 
+- **Natural-language dispatcher**: describe intent in plain language and auto-map to the right `/req:*` command (e.g., "fix the login timeout bug" → `/req:fix`, "start developing 025" → `/req:dev REQ-025`; pasting an issue/PR URL also works)
+- **Auto mode**: `/req:fix --auto` skips every confirmation and chains commit → push → PR in one shot (a `.claude/.req-auto` marker lets the native git-confirm dialog through)
 - **AI-guided requirements analysis**: AI asks questions round by round, then generates a complete document in one shot
 - **Full lifecycle**: Draft → In Review → Approved → In Development → In Testing → Done
 - **Dual tracks**: formal requirements (REQ) and quick fixes (QUICK)

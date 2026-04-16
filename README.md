@@ -55,6 +55,8 @@ claude plugins uninstall req@devflow  # 卸载插件
 
 ### 核心特性
 
+- **自然语言指令**：直接用中文描述意图，自动映射到 `/req:*` 命令（如"修个登录超时的 bug"→ `/req:fix`、"开始开发025"→ `/req:dev REQ-025`，支持粘贴 issue/PR URL 自动识别）
+- **一键模式**：`/req:fix --auto` 跳过所有确认交互，自动串联 commit → push → PR（通过 `.claude/.req-auto` marker 放行 git 确认弹框）
 - **AI 提问式需求分析**：AI 逐轮提问收集信息，一次性生成完整需求文档
 - **完整生命周期**：草稿 → 待评审 → 评审通过 → 开发中 → 测试中 → 已完成
 - **双轨需求**：正式需求（REQ）和快速修复（QUICK）两套流程

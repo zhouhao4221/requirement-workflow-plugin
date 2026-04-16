@@ -625,6 +625,137 @@ Typical uses:
 
 ---
 
+## 13. Natural language & auto mode
+
+### 13.1 Natural-language commands
+
+No need to memorize slash commands — describe your intent in plain language and the plugin auto-maps it.
+
+**Requirement docs**
+
+```
+create a requirement: user points management   → /req:new user points management
+new backend requirement: order export           → /req:new order export --type=backend
+edit REQ-025, add export                        → /req:edit REQ-025
+```
+
+**Fixes & development (no doc)**
+
+```
+fix the login timeout bug                       → /req:fix login timeout
+fix bug #42                                     → /req:fix --from-issue=#42
+optimize order query performance                → /req:do optimize order query performance
+refactor the user service layer                 → /req:do refactor user service layer
+upgrade Go to 1.23                              → /req:do upgrade Go to 1.23
+quick change to the pagination default          → /req:new-quick pagination default
+```
+
+**State transitions** (ID required)
+
+```
+start developing 025                            → /req:dev REQ-025
+start testing 025                               → /req:test REQ-025
+025 approved / approve 025                      → /req:review pass
+025 rejected                                    → /req:review reject
+done 025 / close 025                            → /req:done REQ-025
+```
+
+**Versioning & PR**
+
+```
+commit                                          → /req:commit
+create PR / open PR                             → /req:pr
+review PR                                       → /req:review-pr review
+pull PR comments                                → /req:review-pr fetch-comments
+merge PR                                        → /req:review-pr merge
+```
+
+**Paste a Git platform URL** (auto-detect issue / PR)
+
+```
+fix owner/repo/issues/169                       → /req:fix --from-issue=#169
+create a requirement from owner/repo/issues/12  → /req:new --from-issue=#12
+review owner/repo/pulls/158                     → /req:review-pr review (switch to PR branch first)
+```
+
+Pasting a URL without a verb shows a menu to pick the action.
+
+**ID parsing rules**
+
+| Input | Parsed |
+|-------|--------|
+| `REQ-025` / `REQ025` | REQ-025 |
+| `QUICK-003` / `QUICK003` | QUICK-003 |
+| Digits `025` / `25` | REQ-025 (zero-padded to 3 digits) |
+| `#42` / `issue 42` | `--from-issue=#42` |
+
+**Does NOT trigger**
+
+- Query / display: "show me 025" routes to `/req:show`
+- Discussion / questions: "how do we fix this bug?", "should we refactor?"
+- Missing required info: "edit requirement" without ID, "optimize" with no object, "done" with no ID
+- Messages starting with a slash command (`/req:`, `/pm:`, `/api:`)
+- URLs pointing to other repos (mismatches `git remote`)
+
+### 13.2 One-shot fix (`--auto`)
+
+`/req:fix --auto` skips every confirmation and chains commit → push → PR.
+
+**How to trigger**
+
+```
+/req:fix login timeout --auto                    # Explicit
+fix Excel export encoding, no confirm needed     # Natural language
+one-shot fix the login timeout                   # Natural language
+just fix it and open a PR                        # Natural language
+auto-fix #42                                     # Natural language + issue
+```
+
+Natural-language triggers: `one-shot fix` / `auto fix` / `just fix and open a PR` / `no confirm` / `don't ask me` / `run through` / equivalents in Chinese.
+
+**Automatically skipped**
+
+| Confirmation | How it's skipped |
+|--------------|------------------|
+| Fix plan confirmation | Built into the command |
+| Native confirm dialog before `git commit` | `.claude/.req-auto` marker (hook lets it through) |
+| `/req:commit` interactive type picker | AI infers "fix" |
+| `--from-issue` close-issue question | Defaults to close |
+| `/req:pr` post-create branch cleanup question | Defaults to keep |
+| Manually chaining commit → push → PR | Done automatically |
+
+**Cannot be skipped** (Claude Code harness — must be set locally)
+
+- First-time Bash / Write / Edit tool-permission confirmation
+- Plan Mode approval (if Plan Mode is enabled)
+
+**Will NOT be skipped** (safety rails)
+
+- Commits on protected branches (`main` / `master` / `develop`) — switch to a dev branch first
+- Actual AI analysis and code changes (core execution, not a confirmation)
+
+**Under the hood**
+
+`--auto` creates a `.claude/.req-auto` marker file on start (mtime 10-minute TTL). The PreToolUse confirm hooks check for a valid marker and let the call through without prompting for `git commit` confirmation. The marker is cleaned up at the end of the flow; if the process exits abnormally, the TTL expires and the marker stops allowing passes.
+
+`.claude/.req-auto` is already in `.gitignore` — it won't be committed.
+
+**Typical flow**
+
+```
+User: fix the Excel export encoding, no confirm needed
+   ↓
+AI:   🧠 Recognized: /req:fix Excel export encoding --auto
+      ⚙️ --auto skips: [capability list]
+      🔒 Cannot skip: [harness permissions]
+      🛑 Won't skip: [protected branches, actual code changes]
+      Proceed?
+   ↓
+Diagnose → edit code → git commit → git push → open PR
+```
+
+---
+
 ## Cheat sheet
 
 | Scenario | Command |
