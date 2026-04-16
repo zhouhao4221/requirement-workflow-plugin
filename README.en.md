@@ -8,7 +8,7 @@ AI-driven software lifecycle management toolkit. Covers requirements analysis, d
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| **req** | Full requirements workflow — from analysis to archival | v3.4.0 |
+| **req** | Full requirements workflow — from analysis to archival | v3.5.0 |
 | **pm** | Project management helper — weekly/monthly reports, stats, risk scan, plans | v0.2.0 |
 | **api** | API integration — Swagger parsing, field mapping, code generation | v0.3.0 |
 

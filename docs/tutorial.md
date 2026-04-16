@@ -755,6 +755,21 @@ AI：🧠 识别：/req:fix Excel 导出中文乱码 --auto
 定位问题 → 修改代码 → git commit → git push → 创建 PR
 ```
 
+### 13.3 其他支持 `--auto` 的命令
+
+**`/req:review-pr review --auto`** — 跳过"是否上传评审评论"的询问
+
+默认情况下（不带 `--auto`），AI 代码审查完成后会展示**精简版评论预览**并询问 `y/n`，避免审查结果直接对外发布。传入 `--auto` 跳过询问，直接上传。
+
+```
+/req:review-pr review               # 展示预览 → 等待 y/n 确认
+/req:review-pr review --auto        # 直接上传精简版评论
+```
+
+自然语言触发：`一键审查`、`自动审查`、`审查并提交`、`审完直接评论`、`别问我`。
+
+> **只影响 `review` 子命令的上传询问**。`/req:review-pr merge` 的合并后分支清理询问由 `branchStrategy.deleteBranchAfterMerge` 控制；`/req:review-pr fetch-comments` 的"是否应用修改"询问保留，避免 AI 误改代码。
+
 ---
 
 ## 常用命令速查

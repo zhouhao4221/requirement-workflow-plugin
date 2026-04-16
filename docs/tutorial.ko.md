@@ -754,6 +754,21 @@ AI:    🧠 인식: /req:fix Excel 내보내기 인코딩 --auto
 진단 → 코드 수정 → git commit → git push → PR 생성
 ```
 
+### 13.3 `--auto` 를 지원하는 다른 커맨드
+
+**`/req:review-pr review --auto`** — "리뷰 코멘트 업로드 여부" 확인 건너뛰기
+
+기본 (—auto 없음) 은 AI 코드 리뷰 완료 후 **축약된 코멘트 프리뷰**를 표시하고 `y/n` 을 기다립니다. 리뷰 결과가 확인 없이 외부에 공개되는 것을 방지하기 위함입니다. `--auto` 를 전달하면 질문을 건너뛰고 바로 업로드합니다.
+
+```
+/req:review-pr review               # 프리뷰 표시 → y/n 확인 대기
+/req:review-pr review --auto        # 축약 코멘트 바로 업로드
+```
+
+자연어 트리거: `원클릭 리뷰`, `자동 리뷰`, `리뷰 후 바로 코멘트`, `묻지 마`.
+
+> **`review` 서브커맨드의 업로드 확인에만 영향.** `/req:review-pr merge` 의 머지 후 브랜치 정리 확인은 `branchStrategy.deleteBranchAfterMerge` 로 제어되고, `/req:review-pr fetch-comments` 의 "수정 적용 여부" 확인은 AI 가 코드를 임의로 수정하지 않도록 유지됩니다.
+
 ---
 
 ## 커맨드 치트 시트

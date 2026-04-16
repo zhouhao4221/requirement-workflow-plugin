@@ -754,6 +754,21 @@ AI:   🧠 Recognized: /req:fix Excel export encoding --auto
 Diagnose → edit code → git commit → git push → open PR
 ```
 
+### 13.3 Other commands that support `--auto`
+
+**`/req:review-pr review --auto`** — skip the "upload review comment?" confirmation
+
+By default (without `--auto`), after the AI review completes, the command prints a **condensed preview** of the comment that would be uploaded and waits for `y/n`, so the review doesn't go public unreviewed by you. Passing `--auto` skips the prompt and uploads directly.
+
+```
+/req:review-pr review               # Show preview → wait for y/n
+/req:review-pr review --auto        # Upload the condensed comment directly
+```
+
+Natural-language triggers: `one-shot review`, `auto review`, `review and submit`, `post the review`, `don't ask me`.
+
+> **Only affects the `review` subcommand's upload prompt.** `/req:review-pr merge` post-merge branch cleanup is controlled by `branchStrategy.deleteBranchAfterMerge`; `/req:review-pr fetch-comments` keeps its "apply changes?" prompt so AI doesn't silently edit code.
+
 ---
 
 ## Cheat sheet

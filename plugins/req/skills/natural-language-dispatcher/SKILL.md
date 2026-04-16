@@ -233,6 +233,23 @@ description: |
 | "合并 PR"、"merge PR"、"PR 合并了" | `/req:review-pr merge` |
 | "拉 PR 评论"、"应用 PR 评论"、"处理 PR 反馈" | `/req:review-pr fetch-comments` |
 
+**`--auto` 非交互模式触发词**（`review` 子命令专用，跳过上传评论前的确认）：
+
+- "自动审查"、"一键审查"、"审查并提交"、"审完直接评论"、"审完自动提评论"
+- "不用确认"、"别问我"、"跑完再说"
+- 显式带 "--auto"
+
+**示例**：
+- "一键审查 PR" → `/req:review-pr review --auto`
+- "自动审查 owner/repo/pulls/158" → `/req:review-pr review --auto`（先切分支）
+- "审 PR，别问我" → `/req:review-pr review --auto`
+
+识别到 `--auto` 时回复须说明能力边界（详见 `commands/review-pr.md` 步骤 5.3）。
+
+> `/req:review-pr merge` 和 `/req:review-pr fetch-comments` 自身的交互点不走 `--auto`：
+> - `merge` 合并后的分支清理询问由 `branchStrategy.deleteBranchAfterMerge` 配置控制
+> - `fetch-comments` 的"是否应用修改"询问保留，避免 AI 误改代码
+
 ---
 
 ## 五、Git 平台 URL 识别
