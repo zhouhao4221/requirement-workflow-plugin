@@ -106,7 +106,7 @@ model: claude-sonnet-4-6              # 命令使用的模型
 - `/req` - 列出所有需求
 - `/req:new [标题] [--type=后端|前端|全栈] [--from-issue=#N]` - 创建新需求，支持从 GitHub/Gitea issue 导入
 - `/req:new-quick [标题] [--from-issue=#N]` - 创建快速修复（小bug/小功能，有文档记录）
-- `/req:fix <问题描述>` - 轻量修复（无文档，AI 辅助定位 bug，创建修复分支）
+- `/req:fix <问题描述> [--from-issue=#N]` - 轻量修复（无文档，AI 辅助定位 bug，创建修复分支，支持从 GitHub/Gitea issue 导入）
 - `/req:do <描述> [--from-issue=#N]` - 智能开发（无文档，AI 分析意图，自动选择流程和分支前缀）
 - `/req:split [需求描述]` - 需求拆分分析（只读，给出粒度和拆分建议）
 - `/req:upgrade <QUICK-XXX>` - 将快速修复升级为正式需求
@@ -177,6 +177,7 @@ model: claude-sonnet-4-6              # 命令使用的模型
   - `/req:test_regression` - 运行已有自动化测试，生成回归报告
   - `/req:test_new` - 创建新测试用例（UT/API/E2E）
 - `changelog-generator` - 执行 `/req:changelog` 时触发，根据 Git 记录生成版本说明
+- `natural-language-dispatcher` - 用户用自然语言描述操作时触发，映射到对应 `/req:*` 命令（需求新增/修改、修 bug、优化/重构、状态流转、PR 操作等），并识别 issue/PR URL（如 `owner/repo/issues/169`）
 
 ### 钩子
 

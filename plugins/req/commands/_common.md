@@ -394,11 +394,12 @@ gh issue view ${N} --json title,body,number,url,labels
 feat/REQ-001-user-points-i12       ← /req:dev，需求文档 issue=#12
 fix/QUICK-003-fix-login-i5         ← /req:dev，快速修复 issue=#5
 fix/optimize-order-query-i42       ← /req:do --from-issue=#42
+fix/login-token-not-cleared-i42    ← /req:fix --from-issue=#42
 feat/REQ-001-user-points           ← 无 issue 关联，不加后缀
 ```
 
 **规则**：
-- `-iN` 仅当 issue 编号存在时追加（需求文档 `issue` 字段非 `-`，或 `/req:do` 的 `--from-issue` 参数）
+- `-iN` 仅当 issue 编号存在时追加（需求文档 `issue` 字段非 `-`，或 `/req:do`、`/req:fix` 的 `--from-issue` 参数）
 - `N` 为纯数字，不带 `#`
 - 位于分支名最末尾，不影响 REQ-XXX / QUICK-XXX 的提取
 
@@ -409,7 +410,7 @@ feat/REQ-001-user-points           ← 无 issue 关联，不加后缀
 | 优先级 | 来源 | 适用场景 |
 |-------|------|---------|
 | 1 | 需求文档元信息 `issue` 字段 | `/req:done`、`/req:commit`（有需求文档时） |
-| 2 | 当前分支名的 `-iN` 后缀 | `/req:commit`、`/req:do` 完成时（无需求文档时） |
+| 2 | 当前分支名的 `-iN` 后缀 | `/req:commit`、`/req:do`、`/req:fix` 完成时（无需求文档时） |
 
 **解析正则**：`-i(\d+)$` 匹配分支名末尾的 issue 编号。
 
@@ -431,6 +432,7 @@ Git 平台（GitHub / Gitea）会自动将该 commit 关联到 issue，并在合
 | `/req:new --from-issue` | 需求文档 `issue` 字段 | `/req:done` 询问 + API 关闭 | 需求完成时 |
 | `/req:new-quick --from-issue` | 需求文档 `issue` 字段 | `/req:done` 询问 + API 关闭 | 需求完成时 |
 | `/req:do --from-issue` | 分支名 `-iN` | `/req:do` 完成时询问 + API 关闭 | 任务完成时 |
+| `/req:fix --from-issue` | 分支名 `-iN` | `/req:fix` 完成时询问 + API 关闭 | 修复完成时 |
 | 以上所有 | commit message `closes #N` | Git 平台自动关闭 | PR 合并时 |
 
 ## CLAUDE.md 架构检查
