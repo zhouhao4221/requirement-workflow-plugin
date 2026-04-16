@@ -28,24 +28,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, curl:*)
 
 ### 0. （可选）从 issue 导入
 
-若命令带 `--from-issue=#N`，先拉取 issue：
-
-**Gitea**：
-```bash
-curl -s "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/issues/${N}" \
-  -H "Authorization: token ${TOKEN}"
-```
-
-**GitHub**：
-```bash
-gh issue view ${N} --json title,body,number,url,labels
-```
-
-**repoType = "other" 或未配置**：
-```
-❌ 未配置支持的 Git 平台（需 repoType=github 或 gitea）
-💡 请先执行 /req:branch init 配置
-```
+若命令带 `--from-issue=#N`，按 [_common.md 的 Issue 拉取规范](./_common.md#issue-拉取规范) 拉取 issue。
 
 拉取成功后：
 - **默认标题**：issue 标题（用户未传标题时直接采用，传了则以用户标题为准）

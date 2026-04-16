@@ -244,11 +244,15 @@ else:
 | `构建` | 构建/工具/依赖 | 其他变更 (Others) |
 | `样式` | 代码格式 | 其他变更 (Others) |
 
+**Issue 关联：** 按 [_common.md 的 Issue 读取优先级](./_common.md#issue-编号的读取优先级) 获取 issue 编号：先查需求文档 `issue` 字段，再查分支名 `-iN` 后缀。检测到 issue 编号时，在 commit message 末尾追加 `closes #N`。
+
 **示例：**
 ```
 新功能: 实现部门渠道关联 (REQ-001)
 修复: 订单渠道过滤逻辑错误 (REQ-001)
 重构: 部门服务层代码 (QUICK-003)
+新功能: 实现用户积分规则 (REQ-001) closes #12
+优化: 订单查询添加索引 closes #42
 文档: 更新 API 文档
 构建: 升级依赖版本
 ```

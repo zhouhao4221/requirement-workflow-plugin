@@ -106,9 +106,10 @@ else:
 2. 拼接分支名（使用策略配置的前缀）：
    - REQ-XXX → `<FEATURE_PREFIX>REQ-XXX-<slug>`（默认 `feat/REQ-XXX-<slug>`）
    - QUICK-XXX → `<FIX_PREFIX>QUICK-XXX-<slug>`（默认 `fix/QUICK-XXX-<slug>`）
-3. 展示分支名供用户确认（可修改）：
+3. 若需求文档元信息 `issue` 字段非 `-` 且非空（如 `#12`），在分支名末尾追加 `-i<N>`（如 `-i12`），参见 [_common.md 的 Issue 与分支关联](./_common.md#issue-与分支提交的关联)
+4. 展示分支名供用户确认（可修改）：
    ```
-   将创建开发分支：feat/REQ-001-user-points
+   将创建开发分支：feat/REQ-001-user-points-i12
    基于分支：main（来源：branchStrategy.branchFrom）
    ```
 4. 用户确认后：

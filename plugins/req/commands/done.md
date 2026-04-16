@@ -93,7 +93,7 @@ gh pr create --title "feat(REQ-XXX): <标题>" --base <mergeTarget>
 
 ### 8. 关联 issue 关闭提醒
 
-读取需求文档元信息的 `issue` 字段。若为 `-` 或为空 → 跳过本步。
+按 [_common.md 的 Issue 读取优先级](./_common.md#issue-编号的读取优先级) 获取 issue 编号：先查需求文档元信息 `issue` 字段，若为 `-` 或为空则查分支名 `-iN` 后缀。均未找到 → 跳过本步。
 
 否则询问用户：
 

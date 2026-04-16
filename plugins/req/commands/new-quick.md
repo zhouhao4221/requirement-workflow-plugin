@@ -66,7 +66,7 @@ MAX_NUM=$(echo -e "$LOCAL_MAX\n$CACHE_MAX" | sort -t'-' -k2 -n | tail -1)
 
 ### 1.5 （可选）从 issue 导入
 
-若命令带 `--from-issue=#N`，先拉取 issue（Gitea API / `gh issue view`）：
+若命令带 `--from-issue=#N`，按 [_common.md 的 Issue 拉取规范](./_common.md#issue-拉取规范) 拉取 issue：
 - issue 标题作为默认标题
 - issue 正文作为「问题/需求描述」的初始输入
 - 元信息 `issue` 字段填 `#N`（否则填 `-`）

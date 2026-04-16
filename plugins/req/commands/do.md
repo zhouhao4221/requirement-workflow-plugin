@@ -31,9 +31,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, curl:*)
 
 ### 0. （可选）从 issue 读取描述
 
-若命令带 `--from-issue=#N`，先拉取 issue（Gitea API / `gh issue view`），把 issue 标题 + 正文拼成用户描述传入步骤 1。`repoType` 为 `other` 或未配置时，提示「请先 `/req:branch init`」并退出。
+若命令带 `--from-issue=#N`，按 [_common.md 的 Issue 拉取规范](./_common.md#issue-拉取规范) 拉取 issue，把 issue 标题 + 正文拼成用户描述传入步骤 1。
 
-本命令不创建需求文档，因此**不写入 `issue` 字段**；若需要追踪关联请改用 `/req:new-quick --from-issue` 或 `/req:new --from-issue`。
+本命令不创建需求文档，issue 编号通过**分支名 `-iN` 后缀**持久化（步骤 3 创建分支时追加），供 `/req:commit`、步骤 5 关闭 issue 等后续操作识别。参见 [_common.md 的 Issue 与分支关联](./_common.md#issue-与分支提交的关联)。
 
 ### 1. AI 分析意图
 
@@ -117,7 +117,14 @@ AI 搜索代码库，定位相关文件：
 
 ### 3. 执行方案
 
-**直接在当前分支上开发，不创建新分支、不检测分支策略。**
+**无 `--from-issue`**：直接在当前分支上开发，不创建新分支。
+
+**有 `--from-issue=#N`**：在步骤 2 方案确认后、开始编码前，根据分支策略创建分支：
+1. 读取 `branchStrategy`（未配置则使用默认前缀）
+2. 分支前缀由步骤 1 的类型判断决定（见类型判断依据表的「分支前缀」列）
+3. AI 根据 issue 标题生成英文 slug
+4. 分支名末尾追加 `-i<N>`（参见 [_common.md 的 Issue 与分支关联](./_common.md#issue-与分支提交的关联)）
+5. 示例：`fix/optimize-order-query-i42`、`feat/add-search-feature-i12`
 
 AI 按确认的方案修改代码。
 
@@ -135,6 +142,44 @@ AI 按确认的方案修改代码。
 - /req:commit       提交代码
 - /req:pr           创建 PR
 ```
+
+若来自 `--from-issue=#N`，在后续操作提示中追加：
+```
+💡 提交时建议在 commit message 末尾添加 closes #N 以自动关联 issue
+```
+
+### 5. （可选）关闭 issue
+
+仅当命令带 `--from-issue=#N` 时执行本步骤。
+
+在步骤 4 展示完成提示后，询问用户：
+
+```
+🔗 本次任务来自 issue #N
+   是否关闭该 issue？(y/n)
+```
+
+**用户确认（y）**，按 [_common.md 的 Issue 拉取规范](./_common.md#issue-拉取规范) 中的 `repoType` 调用对应 API：
+
+**gitea**：
+```bash
+curl -s -X PATCH "${giteaUrl}/api/v1/repos/${OWNER}/${REPO}/issues/${N}" \
+  -H "Authorization: token ${giteaToken}" \
+  -H "Content-Type: application/json" \
+  -d '{"state":"closed"}'
+```
+
+**github**：
+```bash
+gh issue close ${N} --comment "Closed via /req:do"
+```
+
+**other**：输出提示让用户手工关闭：
+```
+💡 请手动关闭 issue #N
+```
+
+**用户拒绝（n）**：跳过，不做任何操作。
 
 ---
 
