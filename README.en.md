@@ -18,27 +18,12 @@ AI-driven software lifecycle management toolkit. Covers requirements analysis, d
 
 > Requires Claude Code v1.0.33 or higher (v2.1+ recommended).
 
-> **Upgrading from aiforge**: The marketplace name changed from `aiforge` to `devflow`. Existing users must uninstall and reinstall:
-> ```bash
-> claude plugins uninstall req@aiforge
-> claude plugins marketplace remove aiforge
-> claude plugins marketplace add https://github.com/zhouhao4221/devflow-claude
-> claude plugins install req@devflow
-> ```
-
 ```bash
 # Install from GitHub
 claude plugins marketplace add https://github.com/zhouhao4221/devflow-claude
 claude plugins install req@devflow    # Requirements management
 claude plugins install pm@devflow     # Project management helper
 claude plugins install api@devflow    # API integration
-```
-
-```bash
-# Local install (for development)
-git clone https://github.com/zhouhao4221/devflow-claude.git
-claude plugins marketplace add ./devflow-claude
-claude plugins install req@devflow
 ```
 
 ```bash
