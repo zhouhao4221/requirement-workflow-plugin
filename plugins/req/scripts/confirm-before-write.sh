@@ -23,6 +23,19 @@ if [ -z "$FILE_PATH" ]; then
     exit 0
 fi
 
+# --auto 模式放行：项目内存在 .claude/.req-auto 且 mtime 在 10 分钟内
+# 与 confirm-before-commit.sh 对称，TTL 10 分钟防残留
+CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+[ -z "$CWD" ] && CWD=$(pwd)
+MARKER="$CWD/.claude/.req-auto"
+if [ -f "$MARKER" ]; then
+    NOW=$(date +%s)
+    MTIME=$(stat -f %m "$MARKER" 2>/dev/null || stat -c %Y "$MARKER" 2>/dev/null)
+    if [ -n "$MTIME" ] && [ $((NOW - MTIME)) -lt 600 ]; then
+        exit 0
+    fi
+fi
+
 # 提取文件名
 FILENAME=$(basename "$FILE_PATH")
 

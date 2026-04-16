@@ -18,6 +18,21 @@ if [ -z "$COMMAND" ]; then
     exit 0
 fi
 
+# --auto 模式放行：项目内存在 .claude/.req-auto 且 mtime 在 10 分钟内
+# 由 /req:fix --auto（未来可能还有其他命令）在流程开始时创建、结束时清理
+# TTL 10 分钟用于防止异常退出后残留标记长期放行
+CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+[ -z "$CWD" ] && CWD=$(pwd)
+MARKER="$CWD/.claude/.req-auto"
+if [ -f "$MARKER" ]; then
+    NOW=$(date +%s)
+    # macOS: stat -f %m; Linux: stat -c %Y
+    MTIME=$(stat -f %m "$MARKER" 2>/dev/null || stat -c %Y "$MARKER" 2>/dev/null)
+    if [ -n "$MTIME" ] && [ $((NOW - MTIME)) -lt 600 ]; then
+        exit 0
+    fi
+fi
+
 REASON=""
 
 # 1. git commit

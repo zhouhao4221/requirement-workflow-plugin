@@ -11,6 +11,7 @@ Thumbs.db
 # Claude Code local
 .claude/settings.local.json
 .claude/projects/
+.claude/.req-auto
 
 # Temp files
 *.tmp
