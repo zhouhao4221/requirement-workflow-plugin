@@ -1018,12 +1018,19 @@ if [ "$pr2_status" = "merged" ]; then
         local_deleted=true   # 本地本来就没有
     fi
 
-    # 远程删除（幂等：分支已不存在时远端会返回 warning 不报错）
-    if git push origin --delete "$release_branch" 2>&1 | tee /tmp/release-delete.log; then
+    # 远程删除（幂等：远端 ref 已不存在时 git 会以非 0 退出，需按输出判断）
+    push_output=$(git push origin --delete "$release_branch" 2>&1)
+    push_exit=$?
+    echo "$push_output" > /tmp/release-delete.log
+
+    if [ "$push_exit" -eq 0 ]; then
+        remote_deleted=true
+    elif echo "$push_output" | grep -qiE "remote ref does not exist|unmatched refspec"; then
+        # 平台配置「合并后自动删除源分支」场景：远端已没有这个 ref，视为成功
         remote_deleted=true
     else
         remote_deleted=false
-        cleanup_reason="${cleanup_reason:+$cleanup_reason；}远程删除失败（可能已被平台自动删）"
+        cleanup_reason="${cleanup_reason:+$cleanup_reason；}远程删除失败（见 /tmp/release-delete.log）"
     fi
 
     if [ "$local_deleted" = "true" ] && [ "$remote_deleted" = "true" ]; then
