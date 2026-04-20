@@ -26,6 +26,12 @@
       "description": "项目管理助手 - 汇报、统计、方案等项目管理内容生成",
       "source": "./plugins/pm/",
       "category": "management"
+    },
+    {
+      "name": "diag",
+      "description": "生产诊断 - 只读拉日志、AI 解析堆栈、关联代码、给修复建议，严禁写操作",
+      "source": "./plugins/diag/",
+      "category": "ops"
     }
   ]
 }

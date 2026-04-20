@@ -1,0 +1,12 @@
+{
+  "name": "diag",
+  "version": "0.1.0",
+  "description": "生产诊断 - 只读拉日志、AI 解析堆栈、关联代码、给修复建议，严禁写操作",
+  "author": {
+    "name": "Haiqing"
+  },
+  "license": "Apache-2.0",
+
+  "commands": "./commands/",
+  "skills": "./skills/"
+}

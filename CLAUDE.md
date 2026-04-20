@@ -25,11 +25,18 @@ plugins/
 │   ├── commands/                   # 命令定义
 │   ├── skills/                     # 自动触发技能
 │   └── scripts/                    # Python 解析脚本
-└── pm/                             # 项目管理助手插件
+├── pm/                             # 项目管理助手插件
+│   ├── .claude-plugin/plugin.json  # 插件清单
+│   ├── commands/                   # 命令定义（汇报/统计/方案等）
+│   ├── skills/                     # 自动触发技能
+│   └── scripts/                    # Git 统计采集脚本
+└── diag/                           # 生产诊断插件
     ├── .claude-plugin/plugin.json  # 插件清单
-    ├── commands/                   # 命令定义（汇报/统计/方案等）
-    ├── skills/                     # 自动触发技能
-    └── scripts/                    # Git 统计采集脚本
+    ├── commands/                   # 命令定义（init/diagnose/audit）
+    ├── hooks/hooks.json            # 5 类风控 Hook 注册
+    ├── scripts/                    # SSH 解析 + 配置校验 + 命令白名单
+    ├── skills/                     # stack-analyzer 堆栈识别
+    └── templates/                  # services.yaml 配置模板
 ```
 
 ### 存储架构（本地优先 + 缓存同步）
@@ -537,3 +544,63 @@ docs/reports/
 ### 技能
 
 - `report-generator` - 汇报生成助手，在执行生成类命令时触发，负责数据整合和受众适配
+
+---
+
+## diag 插件 - 生产诊断插件
+
+### 插件定位
+
+diag 插件提供**只读诊断 + 修复建议**能力，覆盖生产应用的报错定位。和 [claude-safe-ops](https://github.com/zhouhao4221/claude-safe-ops) 互补：claude-safe-ops 管"执行类"运维动作，本插件管"只读诊断"。
+
+插件核心边界：
+
+- ✅ **读**：SSH 白名单动词（tail/head/cat/grep/awk/sed/less/wc/find -name/ls/ps/df/free/uptime 等）
+- ❌ **写**：禁止 rm / mv / cp / chmod / 重定向 / 服务控制 / 包管理 / DB 写 / 一切修改类操作
+- ❌ **代码**：修复建议纯文字，插件**不触发** Edit / Write 改动仓库
+- ✅ **审计**：所有 SSH 命令落 JSONL，保留 30 天
+
+### 风控 Hook（5 类 + 1 校验）
+
+| Hook | 时机 | 职责 |
+|---|---|---|
+| `sensitive-input-guard` | UserPromptSubmit | 拦截消息中的 password / token / 私钥 / API key |
+| `validate-hooks` | PreToolUse Bash（首次） | 校验所有 Hook 已注册且可执行 |
+| `host-whitelist` | PreToolUse Bash | SSH 目标主机必须在 services.yaml 中登记 |
+| `command-whitelist` | PreToolUse Bash | SSH 远程命令动词必须在白名单内 |
+| `write-guard` | PreToolUse Bash | 阻断重定向、写类动词、服务控制、DB 写、sudo 等 |
+| `audit-log` | PostToolUse Bash | JSONL 审计日志（日切分、30 天保留） |
+
+**原则**：全部 Hook 用 `permissionDecision: "deny"` 阻断（不是 "ask"），确保不依赖人工确认即可兜底。不匹配的命令不自动升级到 "ask"，保持明确可预期的放行/拦截边界。
+
+### 命令一览
+
+- `/diag` - 子命令入口
+- `/diag:init` - 初始化 `~/.claude-diag/` + 生成服务清单模板 + 依赖检查
+- `/diag:diagnose <报错描述> [--service=<name>]` - 报错定位主流程
+- `/diag:audit [--host] [--service] [--from] [--to] [--limit]` - 审计查询
+
+### 技能
+
+- `stack-analyzer` - 多栈堆栈识别（Java/Spring、Node、Python、Go、Ruby、PHP），在 `/diag:diagnose` 执行时触发，输出结构化 error_type / message / frames
+
+### 存储
+
+```
+~/.claude-diag/
+├── config/services.yaml                        # 服务清单（唯一主机白名单源，600 权限）
+└── audit/command_audit-YYYY-MM-DD.jsonl        # 审计日志（按日切分）
+```
+
+### 与 req / api / pm 的关系
+
+- **独立于三者**：不读 docs/requirements/、不用全局缓存、不改需求文档
+- **支持所有角色**：primary / readonly 仓库均可使用
+- **与 claude-safe-ops 的协作**：诊断得出修复方案后，用户可自行选择是否通过 claude-safe-ops 或手动执行变更
+
+### 依赖
+
+- `python3`（3.6+，用于 shlex 安全解析 SSH 命令）
+- `jq`（Hook 输出 JSON 决策）
+- `yq` 或 `python3 + pyyaml`（二选一，YAML 解析）
+- 系统 `ssh` + `~/.ssh/config` + SSH Agent（插件不接管凭证）
