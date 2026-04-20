@@ -1,0 +1,26 @@
+#!/bin/bash
+# write-guard.sh — PreToolUse Bash Hook
+# 阻断 SSH 远程命令中的写操作（重定向、写类动词、服务控制、包管理、DB 写等）
+
+INPUT=$(cat)
+# shellcheck disable=SC1091
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+
+CMD=$(diag_read_command "$INPUT")
+[ -z "$CMD" ] && exit 0
+
+PARSED=$(diag_parse_ssh "$CMD")
+diag_is_ssh "$PARSED" || exit 0
+
+REMOTE=$(diag_ssh_remote "$PARSED")
+[ -z "$REMOTE" ] && exit 0
+
+RESULT=$(printf '%s' "$REMOTE" | python3 "$DIAG_PLUGIN_ROOT/scripts/check-remote.py")
+WRITE_ALLOWED=$(echo "$RESULT" | jq -r '.write.allowed // false')
+
+if [ "$WRITE_ALLOWED" = "true" ]; then
+    exit 0
+fi
+
+DETAILS=$(echo "$RESULT" | jq -r '.write.violations | map("\(.kind):[\(.token)]") | join("; ")')
+diag_deny "SSH 远程命令含写操作：${DETAILS}。Diag 插件只允许只读命令，禁止修改远程文件/进程/服务/数据库。"
