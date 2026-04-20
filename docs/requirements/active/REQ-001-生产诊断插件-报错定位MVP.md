@@ -6,12 +6,12 @@
 |-----|-----|
 | 编号 | REQ-001 |
 | 类型 | 全栈 |
-| 状态 | 评审通过 |
+| 状态 | 开发中 |
 | 模块 | 生产诊断 |
 | 优先级 | P2 |
 | 创建日期 | 2026-04-20 |
-| 负责人 | - |
-| branch | - |
+| 负责人 | haiqing |
+| branch | feat/REQ-001-diag-plugin-mvp |
 | issue | - |
 
 ## 生命周期
@@ -21,7 +21,7 @@
 - [x] 草稿（编写中）
 - [x] 待评审
 - [x] 评审通过
-- [ ] 开发中
+- [x] 开发中
 - [ ] 测试中
 - [ ] 已完成
 
@@ -305,6 +305,7 @@ flowchart LR
 | 2026-04-20 | 初始版本 | - |
 | 2026-04-20 | 提交评审（草稿 → 待评审） | 状态流转 |
 | 2026-04-20 | 评审通过（待评审 → 评审通过） | 状态流转 |
+| 2026-04-20 | 启动开发（评审通过 → 开发中），创建分支 feat/REQ-001-diag-plugin-mvp，填充实现方案 | 状态流转 + 实现方案 |
 
 ---
 
@@ -335,18 +336,142 @@ flowchart LR
 
 ### 11.1 数据模型
 
-_开发阶段填充_
+本插件无数据库，核心是两份**数据契约**：
+
+#### A. 服务配置 `~/.claude-diag/config/services.yaml`
+
+```yaml
+services:
+  - name: order-api           # 必填，服务标识，唯一
+    host: prod-web-01         # 必填，对应 ~/.ssh/config Host 或 user@ip
+    log_paths:                # 必填，至少 1 条
+      - /var/log/app/order-api.log
+    language_hint: java       # 可选，AI 堆栈识别提示
+    tags: [backend, order]    # 可选，筛选用
+```
+
+校验规则：`name` 唯一；`host`、`log_paths` 非空；`language_hint` 枚举 `java/node/python/go/ruby/php/其他/空`。
+
+#### B. 审计记录 `~/.claude-diag/audit/command_audit-YYYY-MM-DD.jsonl`
+
+每日切分，保留 30 天。每行一条 JSON：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `timestamp` | ISO-8601 | 精确到秒 |
+| `session_id` | string | Claude Code 会话标识 |
+| `operator` | string | 本地 `whoami` |
+| `host` | string | 目标主机（必在白名单内） |
+| `service` | string | 关联服务名 |
+| `command` | string | 完整 SSH 命令 |
+| `exit_code` | int | SSH 进程退出码 |
+| `duration_ms` | int | 执行耗时 |
+| `log_snippet_hash` | string | 拉取日志 SHA-256（不存全文，避免敏感泄漏） |
+| `advice_summary` | string | AI 诊断摘要前 200 字 |
+| `hooks_passed` | array<string> | 通过的 Hook 列表 |
 
 ### 11.2 API 设计
 
-> 基于第五章接口需求，结合项目代码和 CLAUDE.md API 风格，生成具体技术方案
+> 本插件无 HTTP API，对外契约以 Slash 命令 + Hook + Skill 的形式呈现。
 
-_开发阶段填充_
+| 类型 | 名称 | 说明 |
+|---|---|---|
+| Slash 命令 | `/diag:init` | 初始化 `~/.claude-diag/` + 生成配置模板 + 空跑验证 |
+| Slash 命令 | `/diag:diagnose <描述>` | 报错定位主流程（SSH 拉日志 → AI 堆栈解析 → 本地代码关联 → 诊断报告） |
+| Slash 命令 | `/diag:audit [--host] [--service] [--from] [--to]` | 审计查询（默认近 7 天） |
+| Slash 命令 | `/diag` | 入口，展示子命令帮助 |
+| Hook: UserPromptSubmit | `sensitive-input-guard.sh` | 拦截用户消息中的 token/password/key |
+| Hook: PreToolUse(Bash, 首次) | `validate-hooks.sh` | 校验 Hook 注册完整性 |
+| Hook: PreToolUse(Bash) | `host-whitelist.sh` | SSH 目标主机白名单 |
+| Hook: PreToolUse(Bash) | `command-whitelist.sh` | SSH 远程命令白名单 |
+| Hook: PreToolUse(Bash) | `write-guard.sh` | 写操作/重定向阻断 |
+| Hook: PostToolUse(Bash) | `audit-log.sh` | 审计日志落 JSONL |
+| Skill | `stack-analyzer` | AI 自适应识别多栈异常堆栈 |
+
+**SSH 命令白名单**（可执行动词）：
+
+```
+tail | head | cat | grep | awk | sed | less | wc | find | ls | ps | df | free | uptime | stat | readlink | file
+```
+
+**黑名单关键字**（命中即阻断）：
+
+```
+重定向：> >> | tee
+写类动词：rm | mv | cp | chmod | chown | chattr | truncate | dd | mkfs | wipefs
+进程控制：kill | pkill | killall
+服务控制：systemctl start|stop|restart|reload|enable|disable | service ... start|stop|restart
+容器控制：docker (run|stop|rm|rmi|kill|exec -w|system prune) | kubectl (apply|delete|patch|scale|exec -w)
+包管理：apt|yum|dnf|pacman|brew install|remove|upgrade
+网络写：iptables | ip route add|del | sysctl -w
+find 写操作：find ... -delete | find ... -exec
+数据库写：mysql -e | psql -c 含 INSERT/UPDATE/DELETE/DROP/ALTER/CREATE/TRUNCATE
+```
 
 ### 11.3 文件改动清单
 
-_开发阶段填充_
+**新增**（18 个）：
+
+```
+plugins/diag/
+├── .claude-plugin/plugin.json              插件清单
+├── README.md                               使用说明
+├── commands/
+│   ├── diag.md                             入口
+│   ├── init.md                             /diag:init
+│   ├── diagnose.md                         /diag:diagnose
+│   └── audit.md                            /diag:audit
+├── hooks/
+│   ├── hooks.json                          Hook 注册
+│   ├── _common.sh                          共享函数（SSH 解析、配置读取）
+│   ├── sensitive-input-guard.sh            F7
+│   ├── validate-hooks.sh                   F8
+│   ├── host-whitelist.sh                   F5
+│   ├── command-whitelist.sh                F4
+│   ├── write-guard.sh                      F6
+│   └── audit-log.sh                        F9
+├── scripts/
+│   ├── services-config.sh                  读取/校验 services.yaml
+│   └── init-diag.sh                        初始化 ~/.claude-diag/
+├── skills/stack-analyzer/SKILL.md          F10 堆栈识别
+└── templates/services.yaml.template        配置模板
+```
+
+**修改**（2 个）：
+
+| 文件 | 改动 |
+|---|---|
+| `.claude-plugin/marketplace.json` | 注册 diag 插件 |
+| `CLAUDE.md` | 新增 diag 插件段落（简介 + 命令 + 与 req/api/pm 的关系 + 风控设计） |
 
 ### 11.4 实现步骤
 
-_开发阶段填充_
+按"**依赖从底到顶**"的顺序，配合 4 个阶段提交：
+
+**Stage 1 — 骨架与配置（步骤 1-3）**
+
+1. 插件骨架：`plugins/diag/{plugin.json, README.md}` + `.claude-plugin/marketplace.json` 注册
+2. 配置层：`templates/services.yaml.template` + `scripts/services-config.sh`（读取/校验）+ `scripts/init-diag.sh`（初始化 `~/.claude-diag/`）
+3. 共享函数：`hooks/_common.sh`（SSH 命令解析、主机抽取、远程命令抽取、配置读取、JSON 决策输出）
+
+**Stage 2 — 风控 Hook（步骤 4-5）**
+
+4. 5 个 Hook 脚本（按独立性从低到高）：
+   - 4.1 `audit-log.sh`（只写不拦，先保证审计可用）
+   - 4.2 `sensitive-input-guard.sh`（UserPromptSubmit，独立）
+   - 4.3 `host-whitelist.sh`（基于配置层）
+   - 4.4 `command-whitelist.sh`（基于 `_common.sh`）
+   - 4.5 `write-guard.sh`（基于 `_common.sh`）
+   - 4.6 `validate-hooks.sh`（依赖前面全部）
+5. `hooks/hooks.json` 注册所有 Hook，设置 matcher（Bash / UserPromptSubmit）、timeout、first-call 语义
+
+**Stage 3 — 命令与技能（步骤 6-7）**
+
+6. 命令（按用户路径）：`init.md` → `diagnose.md` → `audit.md` → `diag.md`（入口）
+7. Skill：`stack-analyzer/SKILL.md`（触发于 /diag:diagnose，定义多栈堆栈识别策略）
+
+**Stage 4 — 集成与冒烟（步骤 8-10）**
+
+8. 文档集成：`CLAUDE.md` 新增 diag 插件段落
+9. 端到端冒烟：配一个假 services.yaml，跑完整 `/diag:diagnose` 流程
+10. 对照 T1-T10 逐条手动验证风控 Hook 生效
