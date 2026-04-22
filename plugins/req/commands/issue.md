@@ -2,6 +2,7 @@
 description: Issue 工作流 - 创建/编辑/关闭/列表/查看/评论 issue
 argument-hint: "<new|edit|close|reopen|list|show|comment> [参数...]"
 allowed-tools: Read, Glob, Grep, Bash(git:*, gh:*, curl:*, python3:*, jq:*)
+model: claude-sonnet-4-6
 ---
 
 # Issue 工作流

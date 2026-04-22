@@ -2,6 +2,7 @@
 description: 回归测试 - 运行已有自动化测试用例
 argument-hint: "[REQ-XXX]"
 allowed-tools: Read, Glob, Grep, Bash
+model: claude-sonnet-4-6
 ---
 
 > **重要**：本命令的测试文件位置、运行命令、代码示例均从项目 CLAUDE.md 的「测试规范」章节读取，不内置任何项目细节。

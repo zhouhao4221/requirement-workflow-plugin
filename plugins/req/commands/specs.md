@@ -2,6 +2,7 @@
 description: 规范文档管理 - 团队共享的数据类型、接口契约、业务规则等规范文档
 argument-hint: "[new|show|edit] [名称]"
 allowed-tools: Read, Write, Edit, Glob, Grep
+model: claude-sonnet-4-6
 ---
 
 # 规范文档管理

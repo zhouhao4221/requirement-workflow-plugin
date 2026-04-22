@@ -2,6 +2,7 @@
 description: 升级需求 - 将快速修复升级为正式需求
 argument-hint: "<QUICK-XXX>"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(mv:*)
+model: claude-sonnet-4-6
 ---
 
 # 升级快速修复为正式需求
