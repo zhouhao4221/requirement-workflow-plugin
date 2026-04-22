@@ -84,18 +84,17 @@ model: claude-sonnet-4-6              # 命令使用的模型
 ---
 ```
 
-**模型分级策略**：按命令实际工作复杂度显式降级。Haiku 用于纯展示/机械操作，Sonnet 用于规则驱动的文档/git/API 操作，深度推理类保持默认（一般是 Opus）。
+**模型分级策略**：按命令实际工作复杂度显式降级。Haiku 用于纯展示和规则驱动的机械操作，复杂推理/内容生成类保持默认（跟随用户会话模型）。
 
 | 策略 | 适用场景 | 做法 |
 |------|---------|------|
-| **显式 haiku** | 纯读取、列表展示、机械操作、帮助信息 | `model: claude-haiku-4-5-20251001` |
-| **显式 sonnet** | 规则明确的文档编辑、Git/PR/Issue 操作、状态流转、启发式分析 | `model: claude-sonnet-4-6` |
-| **不指定**（继承默认） | 深度代码理解、架构设计、需求从零生成、复杂版本编排 | 省略 `model` 字段 |
+| **显式 haiku** | 纯读取、列表展示、机械操作、规则明确的文档编辑/Git/状态流转 | `model: claude-haiku-4-5-20251001` |
+| **不指定**（继承默认） | 深度代码理解、架构设计、需求从零生成、内容创作、启发式分析 | 省略 `model` 字段 |
 
-**为什么不强制 opus**：
-- 用户账号可能没开 Opus，强制 opus 会报错
-- 用户为省钱把默认切到 Sonnet / Haiku，强制 opus 违背用户意图
-- 默认留给用户控制，Opus 用户能享受，Sonnet 用户也不报错
+**为什么避免显式 sonnet**：
+- Sonnet 有 1M context 变体，在启用 1M 的会话中会触发 extra-usage 付费墙（未订阅用户直接报错）
+- Haiku 全系仅 200K，不会触发 1M 付费墙，对机械类命令足够
+- 复杂命令留空 model 字段跟随用户会话模型，由用户自行决定档位，不被命令强行拉高或锁死
 
 **显式 haiku 的命令清单**：
 - 查看类：`/req`、`/req:status`、`/req:show`、`/req:prd`、`/req:projects`、`/req:cache`、`/req:use`
@@ -104,15 +103,11 @@ model: claude-sonnet-4-6              # 命令使用的模型
 - 帮助：`/req:help`、`/api:help`、`/pm:help`
 - 展示入口：`/pm:pm`、`/pm:standup`、`/pm:export`
 - 检索：`/api:api`、`/api:search`
+- Git/状态流转：`/req:commit`、`/req:review`、`/req:upgrade`、`/req:branch`
+- 文档/项目 CRUD：`/req:modules`、`/req:specs`、`/req:init`、`/req:migrate`
+- 测试编排：`/req:test_regression`
 
-**显式 sonnet 的命令清单**：
-- Git/PR/Issue：`/req:commit`、`/req:pr`、`/req:issue`、`/req:branch`
-- 状态流转：`/req:review`、`/req:upgrade`
-- 文档 CRUD：`/req:edit`、`/req:new-quick`、`/req:modules`、`/req:specs`
-- 项目管理：`/req:init`、`/req:migrate`
-- 分析/测试：`/req:split`、`/req:test_regression`
-
-**保持默认（Opus 推荐）的命令**：`/req:new`、`/req:do`、`/req:fix`、`/req:dev`、`/req:test`、`/req:test_new`、`/req:review-pr`、`/req:prd-edit`、`/req:release`。
+**保持默认的命令**：`/req:new`、`/req:do`、`/req:fix`、`/req:dev`、`/req:test`、`/req:test_new`、`/req:review-pr`、`/req:prd-edit`、`/req:release`、`/req:edit`、`/req:new-quick`、`/req:pr`、`/req:issue`、`/req:split`。
 
 **allowed-tools 约束**：每个命令仅允许其必需的工具集，只读命令不能触发 Write/Edit/Bash，防止误操作。
 
