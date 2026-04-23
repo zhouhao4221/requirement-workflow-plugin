@@ -25,6 +25,35 @@ allowed-tools: Bash(bash:*, ssh:*), Read, Grep, Glob
 
 ## 执行流程
 
+### 0. Session 初始化
+
+每次执行 `/diag:diagnose` 时，在读取服务清单前先完成 session 管理：
+
+```bash
+# 0-a. 清理上一轮遗留的本地 session 文件（2h TTL）
+find "${DIAG_HOME:-$HOME/.claude-diag}/tmp" -maxdepth 1 -name '.current-session' -mmin +120 -delete 2>/dev/null || true
+find "${DIAG_HOME:-$HOME/.claude-diag}/runtime" -maxdepth 1 -name 'tmp-*.json' -mmin +120 -delete 2>/dev/null || true
+
+# 0-b. 若上一轮 session 文件仍存在，读取旧 session id 并清理远端遗留文件
+OLD_SESSION=""
+SESSION_FILE="${DIAG_HOME:-$HOME/.claude-diag}/tmp/.current-session"
+if [ -f "$SESSION_FILE" ]; then
+    OLD_SESSION=$(cat "$SESSION_FILE")
+fi
+
+# 0-c. 生成新 session id（8位十六进制），写入本地
+NEW_SESSION=$(LC_ALL=C tr -dc 'a-f0-9' < /dev/urandom | head -c 8 2>/dev/null || date '+%H%M%S%N' | head -c 8)
+echo "$NEW_SESSION" > "$SESSION_FILE"
+```
+
+**远端遗留文件清理**（若 OLD_SESSION 非空，对本次诊断涉及的每台主机各执行一次）：
+
+```bash
+ssh <host> "rm -f /tmp/claude-diag-<OLD_SESSION>-*"
+```
+
+此命令会通过 write-guard 的 tmp 白名单（rm + 合规前缀），审计落盘。
+
 ### 1. 读取服务清单
 
 ```bash
@@ -50,14 +79,25 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/services-config.sh" list
 **命令模板**（每条日志单独执行一次）：
 
 ```bash
+# 标准只读（优先使用）
 ssh <host> "tail -n <lines> <log_path> | grep -B2 -A 30 -E '<pattern>'"
+
+# 落远端临时文件（数据量大、需要多步处理时使用）
+ssh <host> "tail -n <lines> <log_path> | grep -E '<pattern>' | tee -a /tmp/claude-diag-<session>-<topic>.log"
+# 之后读回
+ssh <host> "cat /tmp/claude-diag-<session>-<topic>.log"
+# 清理（诊断结束时执行）
+ssh <host> "rm -f /tmp/claude-diag-<session>-*"
 ```
 
-**所有命令必须**：
-- 只用白名单动词（tail / grep / head / awk / sed / cat / less / wc 等）
-- 不含重定向（`>`、`>>`、`tee`）
-- 不含写类动作
-- 目标 host 在 `services.yaml` 登记
+**命令约束**：
+- 优先纯 stream（stdout 回本地），避免不必要的远端写入
+- 远端临时文件路径必须以 `/tmp/claude-diag-<session>-` 开头（`<session>` 即当前 session id）
+- 写入只允许 `tee -a`（append），禁止裸 `>` / `>>`
+- 清理只允许 `rm -f /tmp/claude-diag-<session>-*`，禁止 `-r` / `-rf`
+- 禁止在 `/tmp` 下创建子目录
+- 生产机 `/tmp` 可能有容量或 noexec 限制；若 `tee -a` 失败，降级到纯 stream 模式
+- 目标 host 必须在 `services.yaml` 登记
 
 ### 4. 执行 SSH 拉日志
 
@@ -108,9 +148,25 @@ ssh <host> "tail -n <lines> <log_path> | grep -B2 -A 30 -E '<pattern>'"
   - 审计记录：~/.claude-diag/audit/command_audit-<date>.jsonl
 
 🛑 未改动任何远程资源和本地代码。如需应用修复，你自己决定并手动执行。
+
+🧹 Session 清理：
+  - 远端临时文件：/tmp/claude-diag-<session>-* 已清理 / 无遗留
+  - 本地 session 文件：~/.claude-diag/tmp/.current-session
 ```
 
-### 8. 可选：追查链路
+### 8. 清理远端临时文件
+
+诊断结束后（输出报告之前），对本次涉及的每台主机执行清理：
+
+```bash
+ssh <host> "rm -f /tmp/claude-diag-<session>-*"
+```
+
+**条件**：仅在本次诊断过程中确实用了 `tee -a` 写入过远端临时文件时执行；纯 stream 模式无需清理。
+
+清理失败不中断诊断报告输出，但在 Session 清理一栏标注"⚠️ 清理失败，请手动执行"。
+
+### 9. 可选：追查链路
 
 若用户要求深入（"再看下 user.log"），按同样流程再拉一次，不主动扩大范围。
 

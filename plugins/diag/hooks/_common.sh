@@ -69,3 +69,17 @@ diag_mark_passed() {
     local session="${CLAUDE_SESSION_ID:-unknown}"
     echo "$hook" >> "$marker_dir/${session}-$$.passed" 2>/dev/null || true
 }
+
+# 读取当前 diag session id（由 /diag:diagnose 开场写入）
+# 未设置 → 输出空串，上层据此决定是否启用 tmp 白名单
+diag_read_session() {
+    local file="${DIAG_HOME:-$HOME/.claude-diag}/tmp/.current-session"
+    if [ -f "$file" ]; then
+        # 仅允许 [A-Za-z0-9-] 作为 session id（与 check-remote.py 校验一致）
+        local sid
+        sid=$(tr -d '\r\n' < "$file" | head -c 64)
+        if printf '%s' "$sid" | grep -qE '^[A-Za-z0-9-]{4,64}$'; then
+            printf '%s' "$sid"
+        fi
+    fi
+}

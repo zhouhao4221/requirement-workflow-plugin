@@ -43,10 +43,12 @@ fi
 echo ""
 
 # 创建目录
-mkdir -p "$DIAG_HOME/config" "$DIAG_HOME/audit"
+mkdir -p "$DIAG_HOME/config" "$DIAG_HOME/audit" "$DIAG_HOME/tmp" "$DIAG_HOME/runtime"
 chmod 700 "$DIAG_HOME"
 chmod 700 "$DIAG_HOME/config"
 chmod 700 "$DIAG_HOME/audit"
+chmod 700 "$DIAG_HOME/tmp"
+chmod 700 "$DIAG_HOME/runtime"
 
 # 配置模板
 SERVICES_FILE="$DIAG_HOME/config/services.yaml"
@@ -62,7 +64,9 @@ echo ""
 echo "📂 目录结构："
 echo "  $DIAG_HOME/"
 echo "  ├── config/services.yaml     （服务清单，请编辑为真实主机）"
-echo "  └── audit/                   （审计日志，按日切分）"
+echo "  ├── audit/                   （审计日志，按日切分）"
+echo "  ├── tmp/                     （临时 session 文件，2h TTL 自动清理）"
+echo "  └── runtime/                 （Hook 短效 marker，自动清理）"
 echo ""
 echo "💡 下一步："
 echo "  1. 编辑 ${SERVICES_FILE}，登记服务"

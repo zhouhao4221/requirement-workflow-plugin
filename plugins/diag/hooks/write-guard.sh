@@ -21,12 +21,31 @@ diag_is_ssh "$PARSED" || exit 0
 REMOTE=$(diag_ssh_remote "$PARSED")
 [ -z "$REMOTE" ] && exit 0
 
-RESULT=$(printf '%s' "$REMOTE" | python3 "$DIAG_PLUGIN_ROOT/scripts/check-remote.py")
+DIAG_SESSION=$(diag_read_session)
+RESULT=$(printf '%s' "$REMOTE" | DIAG_SESSION_ID="$DIAG_SESSION" python3 "$DIAG_PLUGIN_ROOT/scripts/check-remote.py")
 WRITE_ALLOWED=$(echo "$RESULT" | jq -r '.write.allowed // false')
 
 if [ "$WRITE_ALLOWED" = "true" ]; then
+    # 有特殊放行字段（tmp/docker/db）时写 marker 供 audit-log 补充审计字段
+    HAS_EXTRA=$(echo "$RESULT" | jq -r '
+        ((.write.tmp_paths | length) > 0) or
+        ((.write.docker_containers | length) > 0) or
+        ((.write.db_queries | length) > 0)
+    ')
+    if [ "$HAS_EXTRA" = "true" ] && [ -n "$DIAG_SESSION" ]; then
+        RUNTIME_DIR="${DIAG_HOME:-$HOME/.claude-diag}/runtime"
+        mkdir -p "$RUNTIME_DIR" 2>/dev/null || true
+        KEY=$(printf '%s' "$REMOTE" | shasum -a 256 | awk '{print $1}')
+        echo "$RESULT" | jq -c --arg sid "$DIAG_SESSION" '{
+            tmp_paths:         .write.tmp_paths,
+            tmp_verbs:         .write.tmp_allowed_verbs,
+            docker_containers: .write.docker_containers,
+            db_queries:        .write.db_queries,
+            session:           $sid
+        }' > "$RUNTIME_DIR/tmp-${KEY}.json" 2>/dev/null || true
+    fi
     exit 0
 fi
 
 DETAILS=$(echo "$RESULT" | jq -r '.write.violations | map("\(.kind):[\(.token)]") | join("; ")')
-diag_deny "SSH 远程命令含写操作：${DETAILS}。Diag 插件只允许只读命令，禁止修改远程文件/进程/服务/数据库。"
+diag_deny "SSH 远程命令含写操作：${DETAILS}。Diag 插件只允许只读命令；如需落临时文件，仅允许在 /diag:diagnose 会话内通过 mktemp / tee -a / rm 操作 /tmp/claude-diag-<session>-* 路径。"

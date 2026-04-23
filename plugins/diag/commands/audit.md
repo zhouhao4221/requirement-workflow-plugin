@@ -20,6 +20,7 @@ model: claude-haiku-4-5-20251001
 | `--from=YYYY-MM-DD` | 起始日期（本地时区） | 7 天前 |
 | `--to=YYYY-MM-DD` | 截止日期 | 今天 |
 | `--limit=<N>` | 最多输出条数 | 50 |
+| `--temp-files` | 只显示有远端临时文件写入的记录 | 关闭 |
 
 ---
 
@@ -50,7 +51,13 @@ cat ~/.claude-diag/audit/command_audit-{dates}.jsonl | jq -c '
 ' | tail -n <limit>
 ```
 
-字段：`timestamp / session_id / operator / host / service / command / exit_code / stdout_length / log_snippet_hash / hooks_passed`
+字段：`timestamp / session_id / diag_session_id / operator / host / service / command / exit_code / stdout_length / log_snippet_hash / tmp_write / hooks_passed`
+
+`--temp-files` 时用 jq 过滤 `tmp_write != null`：
+
+```bash
+cat ... | jq -c 'select(.tmp_write != null)'
+```
 
 ### 4. 格式化输出
 
@@ -88,8 +95,10 @@ cat ~/.claude-diag/audit/command_audit-{dates}.jsonl | jq -c '
 ## 常用场景
 
 ```bash
-/diag:audit                                      # 近 7 天全部
-/diag:audit --host=prod-web-01                   # 指定主机
-/diag:audit --service=order-api --from=2026-04-15   # 服务 + 起始日期
-/diag:audit --limit=5                            # 只看最近 5 条
+/diag:audit                                              # 近 7 天全部
+/diag:audit --host=prod-web-01                           # 指定主机
+/diag:audit --service=order-api --from=2026-04-15        # 服务 + 起始日期
+/diag:audit --limit=5                                    # 只看最近 5 条
+/diag:audit --temp-files                                 # 只看有远端临时文件写入的记录
+/diag:audit --temp-files --host=prod-web-01              # 指定主机的临时文件记录
 ```

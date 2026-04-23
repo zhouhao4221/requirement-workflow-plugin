@@ -39,6 +39,25 @@ if diag_config_exists; then
         jq -r --arg h "$HOST" '(.services // []) | map(select(.host == $h)) | .[0].name // ""')
 fi
 
+# 读 tmp 白名单 marker（由 write-guard PreToolUse 落盘，以远端命令哈希为 key）
+DIAG_SESSION=$(diag_read_session)
+REMOTE=$(diag_parse_ssh "$CMD" | jq -r '.remote // empty')
+TMP_PATHS="[]"
+TMP_VERBS="[]"
+DOCKER_CONTAINERS="[]"
+DB_QUERIES="[]"
+if [ -n "$REMOTE" ] && [ -n "$DIAG_SESSION" ]; then
+    KEY=$(printf '%s' "$REMOTE" | shasum -a 256 | awk '{print $1}')
+    MARKER="${DIAG_HOME:-$HOME/.claude-diag}/runtime/tmp-${KEY}.json"
+    if [ -f "$MARKER" ]; then
+        TMP_PATHS=$(jq -c '.tmp_paths // []' "$MARKER")
+        TMP_VERBS=$(jq -c '.tmp_verbs // []' "$MARKER")
+        DOCKER_CONTAINERS=$(jq -c '.docker_containers // []' "$MARKER")
+        DB_QUERIES=$(jq -c '.db_queries // []' "$MARKER")
+        rm -f "$MARKER" 2>/dev/null || true
+    fi
+fi
+
 jq -cn \
     --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
     --arg host "$HOST" \
@@ -47,11 +66,17 @@ jq -cn \
     --arg hash "$SNIPPET_HASH" \
     --arg op "$(whoami)" \
     --arg sid "${CLAUDE_SESSION_ID:-}" \
+    --arg dsid "$DIAG_SESSION" \
     --argjson exit "$EXIT_CODE" \
     --argjson slen "$SNIPPET_LEN" \
+    --argjson tpaths "$TMP_PATHS" \
+    --argjson tverbs "$TMP_VERBS" \
+    --argjson dcontainers "$DOCKER_CONTAINERS" \
+    --argjson dqueries "$DB_QUERIES" \
     '{
         timestamp: $ts,
         session_id: $sid,
+        diag_session_id: $dsid,
         operator: $op,
         host: $host,
         service: $service,
@@ -59,6 +84,9 @@ jq -cn \
         exit_code: $exit,
         stdout_length: $slen,
         log_snippet_hash: $hash,
+        tmp_write:     (if ($tpaths | length) > 0 then {paths: $tpaths, verbs: $tverbs} else null end),
+        docker_exec:   (if ($dcontainers | length) > 0 then {containers: $dcontainers} else null end),
+        db_readonly:   (if ($dqueries | length) > 0 then {queries: $dqueries} else null end),
         hooks_passed: ["validate-hooks", "host-whitelist", "command-whitelist", "write-guard"]
     }' >> "$AUDIT_FILE" 2>/dev/null
 
