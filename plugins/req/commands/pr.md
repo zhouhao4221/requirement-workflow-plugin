@@ -42,8 +42,9 @@ allowed-tools: Read, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*)
 - `mergeTarget`（缺省 `main`，被 `--base` 覆盖）
 - `giteaUrl`、`giteaToken`（仅 gitea 需要）
 - `deleteBranchAfterMerge`（缺省 `true`）
+- `reviewers`（数组，缺省 `[]`；非空则自动设置审核人，无需确认）
 
-无 `branchStrategy` → 按 `other` 处理。
+无 `branchStrategy` → 按 `other` 处理，`reviewers` 视为空。
 
 ### 4. 生成 PR 标题和 Body
 
@@ -83,17 +84,28 @@ git push -u origin <branch>
    ```
    有 → 输出现有 PR 链接，跳到步骤 8
 4. 无 → 调 `POST /api/v1/repos/${OWNER}/${REPO}/pulls`，参数 `title/body/head/base`
+5. **设置审核人**（`reviewers` 非空时，**不询问**直接执行）：
+   - 拿到新建 PR 的 `number`，调用：
+     ```bash
+     curl -s -X POST "${giteaUrl}/api/v1/repos/${OWNER}/${REPO}/pulls/<N>/requested_reviewers" \
+       -H "Authorization: token ${giteaToken}" \
+       -H "Content-Type: application/json" \
+       -d '{"reviewers": ["user1", "user2"]}'
+     ```
+   - tea CLI 无对应子命令，统一走 curl
+   - 单个失败（用户名不存在 / 权限不足）不阻塞主流程，输出 ⚠️ 提示后继续
 
 成功输出：
 ```
 ✅ PR 已创建
    🔗 <url>
+👤 已请求审核：@user1, @user2     ← reviewers 非空时输出
 💡 /req:review-pr review / merge，或 /req:done 归档
 ```
 
 #### github
 
-检查 `command -v gh`。可用 → `gh pr create --title "..." --body "..." --base <target>`。不可用 → 提示命令 + 浏览器 compare 链接。
+检查 `command -v gh`。可用 → `gh pr create --title "..." --body "..." --base <target>`，`reviewers` 非空时追加 `--reviewer <逗号分隔列表>`（**不询问**直接执行）。不可用 → 提示命令 + 浏览器 compare 链接。
 
 #### other
 

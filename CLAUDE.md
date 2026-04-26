@@ -264,7 +264,7 @@ model: claude-sonnet-4-6              # 命令使用的模型
 - slug：需求标题的英文翻译，lowercase kebab-case，最多 5 词
 - `-iN`：可选的 issue 后缀（如 `-i12`），关联了 Git 平台 issue 时追加
 
-**策略配置**：存储在 `.claude/settings.local.json` 的 `branchStrategy` 字段，包含 `model`、`repoType`、`mainBranch`、`developBranch`、`branchFrom`、`mergeTarget` 等。
+**策略配置**：存储在 `.claude/settings.local.json` 的 `branchStrategy` 字段，包含 `model`、`repoType`、`mainBranch`、`developBranch`、`branchFrom`、`mergeTarget`、`reviewers`（默认审核人数组，`/req:pr` 自动请求审核，无需确认）等。
 
 **仓库托管类型**（`repoType` 字段）：
 | 类型 | 说明 | PR 集成 |
