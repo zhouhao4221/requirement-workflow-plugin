@@ -72,7 +72,8 @@ model: claude-haiku-4-5-20251001
     "branchFrom": "main",
     "mergeTarget": "main",
     "mergeMethod": "merge",
-    "deleteBranchAfterMerge": true
+    "deleteBranchAfterMerge": true,
+    "reviewers": []
   }
 }
 ```
@@ -93,7 +94,8 @@ model: claude-haiku-4-5-20251001
     "branchFrom": "develop",
     "mergeTarget": "develop",
     "mergeMethod": "merge",
-    "deleteBranchAfterMerge": true
+    "deleteBranchAfterMerge": true,
+    "reviewers": []
   }
 }
 ```
@@ -113,7 +115,8 @@ model: claude-haiku-4-5-20251001
     "hotfixPrefix": "hotfix/",
     "branchFrom": "main",
     "mergeTarget": "main",
-    "deleteBranchAfterMerge": true
+    "deleteBranchAfterMerge": true,
+    "reviewers": []
   }
 }
 ```
@@ -171,7 +174,25 @@ REMOTE_URL=$(git remote get-url origin)
    生成方式：Gitea → 设置 → 应用 → 生成令牌（需 repo 权限）
 ```
 
-#### 5. Git Flow 额外步骤
+#### 5. 配置默认审核人（可选）
+
+```
+👤 默认审核人（创建 PR 时自动设置，无需每次确认）：
+   多个用逗号分隔，留空则不设置（如：alice,bob）：
+```
+
+输入格式：
+- 单人：`alice`
+- 多人：`alice,bob,carol`
+- 留空回车 → `reviewers: []`，PR 创建时不附带审核人
+
+写入 `branchStrategy.reviewers`（数组）。用户名按平台规范：
+- GitHub：账号 username
+- Gitea：实例内 username
+
+> 不在此校验用户是否存在；`/req:pr` 创建 PR 时调用平台 API，单个无效用户会输出 ⚠️ 但不阻塞 PR。
+
+#### 6. Git Flow 额外步骤
 
 如果选择 Git Flow，检查 develop 分支是否存在：
 
@@ -185,7 +206,7 @@ git rev-parse --verify origin/develop &>/dev/null
   develop 分支不存在，是否从 main 创建？
   ```
 
-#### 5. 写入配置
+#### 7. 写入配置
 
 **必须写入 `.claude/settings.local.json` 的 `branchStrategy` 字段**（与 `requirementProject`、`requirementRole` 同一文件）。
 
@@ -202,6 +223,7 @@ git rev-parse --verify origin/develop &>/dev/null
 🚨 紧急修复：hotfix/xxx（从 main 拉）
 🎯 合并目标：main
 🗑️ 合并后删除分支：是
+👤 默认审核人：@alice, @bob   ← reviewers 非空时输出，空数组不输出此行
 
 💡 后续使用：
 - /req:dev 创建分支时会自动遵循此策略
@@ -244,6 +266,7 @@ git rev-parse --verify origin/develop &>/dev/null
 | 拉取基准 | main |
 | 合并目标 | main |
 | 合并后删除 | 是 |
+| 默认审核人 | @alice, @bob（空数组显示 -） |
 ```
 
 #### 3. 展示当前分支状态
@@ -381,6 +404,12 @@ git branch -d hotfix/fix-order-total-calc
 | 在需求分支上 | 正常提交，自动关联对应需求 |
 | 在 hotfix 分支上 | 正常提交，类型建议选「修复」 |
 
+### /req:pr 审核人自动设置
+
+| 配置项 | 影响 |
+|-------|------|
+| `reviewers` | 非空时创建 PR 后自动请求审核（GitHub: `gh pr create --reviewer ...`；Gitea: `POST /pulls/<N>/requested_reviewers`），不再询问用户 |
+
 ### /req:done 合并方式
 
 根据 `repoType` 决定合并方式：
@@ -430,7 +459,8 @@ git branch -d hotfix/fix-order-total-calc
     "branchFrom": "main",
     "mergeTarget": "main",
     "mergeMethod": "merge",
-    "deleteBranchAfterMerge": true
+    "deleteBranchAfterMerge": true,
+    "reviewers": ["alice", "bob"]
   }
 }
 ```
