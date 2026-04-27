@@ -181,6 +181,13 @@ model: claude-sonnet-4-6              # 命令使用的模型
 - `/req:release` 会按文件名中的 `REQ-XXX` / `QUICK-XXX` 自动关联需求并合并到 `docs/migrations/released/<version>.sql`
 - `docs/migrations/released/` 为已发布版本归档目录，不会被再次扫描
 
+**手动测试用例约定**：
+- 人工复测用例统一放在 `docs/test-cases/` 目录下，文件名含需求编号（如 `REQ-001-testcases.md`）
+- 通过 `/req:test_new REQ-XXX --type=manual` 生成，AI 同时读取需求文档和源代码
+- 覆盖后端接口、前端交互、业务规则三个维度，前后端项目均适用
+- 生成后在需求文档「6.3 手动测试用例」节追加文件引用链接
+- `docs/test-cases/` 建议纳入 git，方便追踪历史复测记录
+
 **项目管理命令（全局缓存模式）：**
 - `/req:init <project-name>` - 初始化项目，创建全局缓存
 - `/req:use <project-name>` - 切换当前仓库绑定的项目
