@@ -260,9 +260,9 @@ gh pr diff ${PR_NUMBER}
 ```
 ✅ AI 审查未发现问题，已自动提交通过评论到 PR #42
    🔗 ${PR_URL}
-
-💡 下一步：/req:review-pr merge
 ```
+
+随后进入步骤 6（无阻塞后续操作）。
 
 有任一 🔴/🟡/📌 项时，走下方 5.1/5.2/5.3 的原流程。
 
@@ -385,6 +385,67 @@ gh pr review ${PR_NUMBER} --comment --body "<精简版审查报告 Markdown>"
 ```
 ⏭️ 已跳过上传，完整审查报告保留在本地终端输出
 💡 如需重新上传：/req:review-pr review --auto
+```
+
+### 6. 无阻塞时的后续操作
+
+**触发条件**（同时满足）：
+- 🔴 阻塞数 = 0（可以有 🟡/🔵 问题）
+- PR 当前为 Open 状态（审核中）
+
+不满足时（有阻塞问题 / PR 已合并或关闭）：跳过本步骤，结束。
+
+**展示选项**：
+
+```
+✅ 审查完成，PR #42 无阻塞问题
+
+请选择后续操作：
+  [1] 审核通过    — 在平台标记 PR 为已批准
+  [2] 审核并合并  — 批准 + 立即合并
+  [3] 不处理      — 保留当前状态，稍后操作
+
+请输入选项（1/2/3，回车默认不处理）：
+```
+
+**选项 1 — 审核通过**
+
+在平台提交「Approved」评审：
+
+**Gitea**：
+```bash
+curl -s -X POST "${GITEA_URL}/api/v1/repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/reviews" \
+  -H "Authorization: token ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"event": "APPROVED", "body": ""}'
+```
+
+**GitHub**：
+```bash
+gh pr review ${PR_NUMBER} --approve
+```
+
+**repoType = "other"**：跳过 API 调用，仅告知用户在平台手动审核通过。
+
+成功后输出：
+```
+✅ PR #42 已标记为审核通过
+   🔗 ${PR_URL}
+
+💡 如需合并：/req:review-pr merge
+```
+
+**选项 2 — 审核并合并**
+
+先执行选项 1（审核通过），成功后继续执行「merge 子命令」的完整流程（从「执行流程（merge）」步骤 1 开始）。
+
+**选项 3 / 回车 — 不处理**
+
+```
+⏭️ 已跳过，PR #42 保持当前状态
+
+💡 后续可执行：
+- /req:review-pr merge    合并 PR
 ```
 
 ---
