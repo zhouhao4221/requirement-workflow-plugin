@@ -411,34 +411,29 @@ has_reviewer = bool(pr_reviewers or config_reviewers)
 
 **无审核人**（`has_reviewer = False`）→ 跳到 6.2，仅展示合并选项。
 
-**6.1 有审核人时——提示审核通过**
+**6.1 有审核人时——提示是否审核通过**
 
 ```
 ✅ 审查完成，PR #42 无阻塞问题
 
 审核人：@alice, @bob
 
-请选择后续操作：
-  [1] 审核通过    — 在平台标记 PR 为已批准（Approved）
-  [2] 审核并合并  — 批准 + 立即合并
-  [3] 不处理      — 保留当前状态，稍后操作
+是否标记为审核通过（Approved）？
+  [y] 审核通过  — 在平台提交 Approved 评审
+  [n] 暂不处理  — 保留当前状态
 
-请输入选项（1/2/3，回车默认不处理）：
+请输入（y/n，回车默认不处理）：
 ```
 
-**6.2 无审核人时——仅展示合并选项**
+**6.2 无审核人时——仅展示当前结果**
 
 ```
 ✅ 审查完成，PR #42 无阻塞问题（无分配审核人）
 
-请选择后续操作：
-  [1] 合并 PR
-  [2] 不处理
-
-请输入选项（1/2，回车默认不处理）：
+💡 如需合并：/req:review-pr merge
 ```
 
-**选项 1 — 审核通过**（仅 `has_reviewer = True` 时出现）
+**y — 审核通过**（仅 `has_reviewer = True` 时出现）
 
 在平台提交「Approved」评审：
 
@@ -465,11 +460,7 @@ gh pr review ${PR_NUMBER} --approve
 💡 如需合并：/req:review-pr merge
 ```
 
-**选项 2 — 审核并合并**
-
-先执行选项 1（审核通过），成功后继续执行「merge 子命令」的完整流程（从「执行流程（merge）」步骤 1 开始）。
-
-**选项 3 / 回车 — 不处理**（`has_reviewer = True`）/ **选项 2 / 回车 — 不处理**（`has_reviewer = False`）
+**n / 回车 — 暂不处理**（`has_reviewer = True`）
 
 ```
 ⏭️ 已跳过，PR #42 保持当前状态
@@ -477,10 +468,6 @@ gh pr review ${PR_NUMBER} --approve
 💡 后续可执行：
 - /req:review-pr merge    合并 PR
 ```
-
-**无审核人时选项 1 — 合并 PR**（`has_reviewer = False`）
-
-直接执行「merge 子命令」的完整流程（从「执行流程（merge）」步骤 1 开始）。
 
 ---
 
