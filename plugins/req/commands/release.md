@@ -43,6 +43,16 @@ model: claude-haiku-4-5-20251001
 
 ## 执行流程
 
+### 步骤 0：角色检查
+
+读取 `.claude/settings.local.json` 中的 `requirementRole`：
+
+- **readonly**：
+  - 从全局缓存 `~/.claude-requirements/projects/<requirementProject>/` 读取需求文档
+  - **禁止修改任何 `docs/requirements/` 下的文件**（包括状态更新、关联信息追加等）
+  - 其余步骤（SQL 合并、changelog、git commit、PR、tag）照常执行
+- **primary / 未配置**：正常读写本地 `docs/requirements/`
+
 ### 步骤 1：参数校验 + 分支判定
 
 1. `<version>` 与 `--bump` 互斥，否则报错退出
@@ -78,6 +88,8 @@ git log $FROM_REF..$TO_REF --pretty=format:"%s%n%b" --no-merges \
 ```
 
 读取每个需求文档，提取标题/类型/状态/关联 SQL 文件数。
+- **primary**：从 `docs/requirements/` 读取
+- **readonly**：从 `~/.claude-requirements/projects/<requirementProject>/` 读取；不存在则跳过该需求，继续纯 commit changelog 流程
 
 ### 步骤 4：扫描 migration SQL
 
