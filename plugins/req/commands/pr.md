@@ -35,16 +35,39 @@ allowed-tools: Read, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*)
 
 `git status --porcelain` 有未提交改动时，自动串联执行 `/req:commit` 流程（分支检查 + 生成提交信息 + 提交），成功后继续。
 
-### 3. 读取策略配置
+### 3. 读取策略配置 + 推导合并目标
 
 读取 `.claude/settings.local.json.branchStrategy`：
+- `model`（`git-flow` / `github-flow` / `trunk-based`，缺省 `github-flow`）
+- `mainBranch`（缺省 `main`）
+- `developBranch`（缺省 `develop`，git-flow 专用）
+- `mergeTarget`（兜底值，缺省 `main`）
 - `repoType`（缺省 `other`）
-- `mergeTarget`（缺省 `main`，被 `--base` 覆盖）
 - `giteaUrl`、`giteaToken`（仅 gitea 需要）
 - `deleteBranchAfterMerge`（缺省 `true`）
 - `reviewers`（数组，缺省 `[]`；非空则自动设置审核人，无需确认）
 
 无 `branchStrategy` → 按 `other` 处理，`reviewers` 视为空。
+
+**合并目标推导**（`--base` 可覆盖最终结果）：
+
+```
+branch = 当前分支名
+
+if model == "git-flow":
+    if branch 以 "hotfix/" 开头:
+        targets = [mainBranch, developBranch]   # 步骤 7 双 PR
+    elif branch 以 "release/" 或 "chore/release-" 开头:
+        targets = [mainBranch]                  # release 合入主线
+    else:                                       # feat/ fix/ 等功能分支
+        targets = [developBranch]               # 功能合入 develop
+elif model in ("github-flow", "trunk-based"):
+    targets = [mainBranch]
+else:
+    targets = [mergeTarget]                     # 兜底
+```
+
+`--base` 存在时直接覆盖 `targets = [args.base]`，跳过上述推导。
 
 ### 4. 生成 PR 标题和 Body
 
@@ -115,9 +138,9 @@ git push -u origin <branch>
 合并命令：git checkout <target> && git merge <branch>
 ```
 
-### 7. Git Flow hotfix 双目标
+### 7. 多目标处理
 
-`model == "git-flow"` 且分支以 `hotfix/` 开头 → 按步骤 6 对 `main` 和 `develop` 各创建一次，输出两个 PR 链接 / 两组命令。
+`targets` 包含多个分支时（当前仅 git-flow hotfix 场景），对每个 target 各执行一次步骤 6，输出对应 PR 链接 / 命令。
 
 ### 8. 分支清理提示
 
