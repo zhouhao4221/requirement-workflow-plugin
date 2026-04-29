@@ -194,6 +194,7 @@ model: claude-sonnet-4-6              # 命令使用的模型
 - `/req:projects` - 列出所有项目
 - `/req:migrate <project-name>` - 将本地需求迁移到全局缓存
 - `/req:cache <action>` - 缓存管理（info/clear/clear-all/rebuild/export）
+- `/req:update [--check]` - 热更新插件（从源目录 git pull，所有项目立即生效）
 - `/req:update-template [模板名] [--force]` - 将插件最新模板同步到项目本地
 
 ### 技能（自动触发）
