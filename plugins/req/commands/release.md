@@ -7,7 +7,7 @@ model: claude-haiku-4-5-20251001
 
 # 颁布版本
 
-准备发版产物（SQL 合并、回滚脚本、changelog、commit、PR）。**默认不创建 git tag**，加 `--tag` 后追加 tag 和平台 Release。
+准备发版产物（SQL 合并、回滚脚本、changelog、commit、PR）并**默认创建 draft Release**。加 `--tag` 额外创建 annotated git tag；加 `--no-draft` 直接正式发布。
 
 > readonly 仓库可用。不触发缓存同步。
 > CLI 优先：GitHub → `gh`；Gitea → 检测 `tea`，不支持的接口回退 curl。详见 [`_gitea_cli.md`](./_gitea_cli.md)。
@@ -21,15 +21,17 @@ model: claude-haiku-4-5-20251001
 | `--bump=major\|minor\|patch` | 显式 bump 等级，与 `<version>` 互斥 |
 | `--from=<ref>` | 起始点，默认上一个 git tag |
 | `--to=<ref>` | 结束点，默认 HEAD |
-| `--tag` | 创建并推 git tag + 平台 Release（默认跳过） |
-| `--no-draft` | 仅 `--tag` 时有效，正式发布（默认 draft） |
+| `--tag` | **额外**创建并推送 annotated git tag（Release 始终创建） |
+| `--no-draft` | 创建正式 Release（默认 draft） |
+| `--no-release` | 跳过创建平台 Release，仅准备产物和 PR |
 | `--main=<branch>` | 临时覆盖 `branchStrategy.mainBranch` |
 
 示例：
-- `/req:release`（准备产物 + PR，不打 tag）
-- `/req:release --tag`（+ draft Release）
-- `/req:release --tag --no-draft`（+ 正式 Release）
-- `/req:release v1.2.0 --tag`（显式版本 + 打 tag）
+- `/req:release`（准备产物 + PR + draft Release，不打 tag）
+- `/req:release --tag`（同上 + annotated tag）
+- `/req:release --no-draft`（正式 Release，无 tag）
+- `/req:release --tag --no-draft`（正式 Release + tag）
+- `/req:release v1.2.0`（显式版本 + draft Release）
 
 ## 起步分支速查
 
@@ -57,18 +59,22 @@ model: claude-haiku-4-5-20251001
 ### 步骤 1：参数校验 + 分支判定
 
 1. `<version>` 与 `--bump` 互斥，否则报错退出
-2. `create_tag = bool(args.tag)`；`--no-draft` 无 `--tag` 时警告忽略
+2. `create_tag = bool(args.tag)`；`skip_release = bool(args.no_release)`
 3. 读 `branchStrategy`：`strategy_model / main_branch / develop_branch / repo_type`
 4. **策略合规检查**（无确认，直接阻止）：
    - `git-flow` + 当前在 `main_branch`：自动 `git checkout <develop_branch>`，提示重跑，exit
    - `github-flow` / `trunk-based` + 当前不在 `main_branch`：硬阻止
 5. **流程模式**：当前 == `main_branch` → `direct`；`release/*` / `chore/release-*` → `release-branch`；`develop_branch` → `cross-branch`；其他 → 硬阻止
-6. **draft 初始化**（仅 `create_tag`）：
+6. **draft 初始化**（`skip_release=false` 时执行）：
    - `is_draft = not args.no_draft`
    - `repoType=other` + draft：询问是否降级 `--no-draft`（**强制交互**）
    - cross/release-branch + `--no-draft`：额外确认（**强制交互**）
+   - `repoType=gitea` + draft + `!create_tag`：Gitea draft Release 要求 tag 先存在，但未指定 `--tag`；询问（**强制交互**）：
+     - [1] 改用 `--no-draft`：Gitea API 自动从 `target_commitish` 生成 lightweight tag，创建正式 Release
+     - [2] 加 `--tag`：额外创建 annotated tag，继续 draft Release
+     - [3] 取消
 
-打印：`当前分支 / 策略 / 流程模式 / create_tag 状态`
+打印：`当前分支 / 策略 / 流程模式 / create_tag / skip_release / is_draft`
 
 ### 步骤 2：确定版本号和 git 范围
 
@@ -152,7 +158,7 @@ find docs/migrations -maxdepth 2 -name "*.sql" ! -path "docs/migrations/released
    - `gitea`：`POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge`（`{"Do":"merge"}`）
    - 合并失败（分支保护/CI 未通过）→ 打印 PR URL，等待用户手动合并后回复「继续」（**强制交互**）
 4. `git checkout <main_branch> && git pull --ff-only`（验证 changelog 存在，异常见 rationale §7.4）
-5. 若 `!create_tag`：进入步骤 16c
+5. 继续步骤 11（若 `create_tag`）和步骤 12（若 `!skip_release`）
 
 **release-branch**：同 cross-branch，但 PR1 是 `<release_branch>` → `<main_branch>`，PR2（步骤 14）同样自动合并。
 
@@ -167,7 +173,7 @@ find docs/migrations -maxdepth 2 -name "*.sql" ! -path "docs/migrations/released
 | 正式 + gitea | false | 不创建，API 从 target_commitish 生成 |
 | 正式 + github / other | true | annotated tag + push |
 
-### 步骤 12：创建平台 Release（仅 `--tag`）
+### 步骤 12：创建平台 Release（`skip_release=false` 时执行）
 
 Release notes 取 `docs/changelogs/<version>.md`。
 
@@ -183,41 +189,42 @@ Release notes 取 `docs/changelogs/<version>.md`。
 git checkout "$start_branch"
 ```
 
-### 步骤 14：PR2 回流（仅 release-branch 且 `--tag`）
+### 步骤 14：PR2 回流（仅 release-branch）
 
 创建 PR2: `<release_branch>` → `<develop_branch>`，等待用户确认（**非阻塞**，可跳过）。
 
-### 步骤 15：清理 release 分支（仅 release-branch 且 `--tag`）
+### 步骤 15：清理 release 分支（仅 release-branch）
 
 PR2 merged → `git branch -D <release_branch>` + `git push origin --delete <release_branch>`。`remote ref does not exist` 视为成功。PR2 pending 时保留分支。
 
 ### 步骤 16：最终报告
 
-**16a 非 draft（`--tag --no-draft`）**：
+**16a 正式 Release（`--no-draft`）**：
 ```
 ✅ 版本 <version> 已颁布！
 📋 需求清单 / 📄 SQL 脚本 / 📝 版本说明
-🏷️ ✅ tag 已推送  🚀 <Release URL>
+🏷️ <若 --tag：✅ annotated tag 已推送 | 否则：— 无本地 tag（平台自动生成 lightweight tag）>
+🚀 <Release URL>
 💡 检查回滚 SQL：cat docs/migrations/released/<version>.rollback.sql
 ```
 
-**16b draft（`--tag`）**：
+**16b draft Release（默认）**：
 ```
 ⚠️ DRAFT：<version> 草稿已创建，需手工 Publish
 📋/📄/📝 同上
-🏷️  gitea: ✅ annotated tag 已推 | github: ⚠️ 未创建（publish 时生成）
+🏷️ <若 --tag：gitea: ✅ annotated tag 已推 | github: ⚠️ publish 时生成 | 否则：— 无本地 tag>
 🚀 <Draft Release URL>（仅作者/管理员可见）
 ⚠️ 未 publish 前：CI/CD 不触发，release 不可见
-💡 放弃：gitea 需删 draft + tag；github 只删 draft
+💡 放弃：gitea 需删 draft（若有 tag 一并删）；github 只删 draft
 ```
 
-**16c 无 tag（默认）**：
+**16c 跳过 Release（`--no-release`）**：
 ```
 ✅ 版本 <version> 产物已就绪！
 📋/📄/📝 同上
-🏷️ ❌ 未指定 --tag  🚀 ❌ 未指定 --tag
+🏷️ <若 --tag：✅ tag 已推送 | 否则：— 无 tag>
+🚀 — 已跳过（--no-release）
 🔀 PR: <PR URL>（等待合并到 <main_branch>）
-💡 合并后：/req:release <version> --tag
 ```
 
 ---
@@ -233,8 +240,10 @@ PR2 merged → `git branch -D <release_branch>` + `git push origin --delete <rel
 | github-flow/trunk-based + 非主分支 | 硬阻止 |
 | PR 未合并用户中止 | 保留已生成产物，不打 tag |
 | 无 candidate 需求 / 全跳过未完成 | 继续纯 commit changelog |
-| `--no-draft` 未搭配 `--tag` | 警告忽略 |
-| 未指定 `--tag` | 步骤 11/12/14/15 跳过 |
+| `--no-draft` 未指定 `--tag` | 正常执行，Release 公开，平台生成 lightweight tag |
+| 未指定 `--tag` | 仅跳过步骤 11（annotated tag），Release 照常创建 |
+| `--no-release` | 跳过步骤 12，仅准备产物和 PR |
+| `repoType=gitea` + draft + 无 `--tag` | 步骤 1 强制交互，选择降级 --no-draft 或补 --tag |
 | Gitea draft 422（Release is has no Tag） | 详见 rationale §12 |
 | `--draft`（老语法） | 接受但忽略（默认已是 draft） |
 
