@@ -134,10 +134,14 @@ find docs/migrations -maxdepth 2 -name "*.sql" ! -path "docs/migrations/released
 2. 创建 PR: `<develop_branch>` → `<main_branch>`（复用 `state=open` 的 PR，不复用 merged/closed，详见 rationale §7.3）
    - `gitea` → API；`github` → `gh pr create`；`other` → 打印命令后终止
    - Body：需求清单 + changelog 摘要
-3. 若 `!create_tag`：打印 PR URL，进入步骤 13c
-4. 若 `create_tag`：等待用户确认 PR 合并（**强制交互**），然后 `git checkout <main_branch> && git pull --ff-only`（验证 changelog 存在，异常见 rationale §7.4）
+3. **自动合并 PR**：
+   - `github`：`gh pr merge <PR_NUMBER> --merge --delete-branch`
+   - `gitea`：`POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge`（`{"Do":"merge"}`）
+   - 合并失败（分支保护/CI 未通过）→ 打印 PR URL，等待用户手动合并后回复「继续」（**强制交互**）
+4. `git checkout <main_branch> && git pull --ff-only`（验证 changelog 存在，异常见 rationale §7.4）
+5. 若 `!create_tag`：进入步骤 13c
 
-**release-branch**：同 cross-branch，但 PR1 是 `<release_branch>` → `<main_branch>`。
+**release-branch**：同 cross-branch，但 PR1 是 `<release_branch>` → `<main_branch>`，PR2（步骤 10.6）同样自动合并。
 
 ### 步骤 11：创建 Git Tag（仅 `--tag`）
 
