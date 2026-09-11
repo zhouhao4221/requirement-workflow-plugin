@@ -131,8 +131,8 @@ else:
 
 ### 4. 生成实现方案（Plan Mode）
 
-> **前置**：读取项目 CLAUDE.md 的「项目架构」章节，获取分层架构、目录结构、开发规范。
-> 缺少时发出警告（见 [_claude-md.md](../shared/_claude-md.md)）。
+> **前置**：Read `docs/prompt/architecture.md`，获取分层架构、目录结构、开发规范；缺失则回退 CLAUDE.md 的「项目架构」章节（兼容旧项目）。
+> 两者都缺时发出警告（见 [_claude-md.md](../shared/_claude-md.md)）。
 
 进入 Plan Mode，基于需求文档和 CLAUDE.md 架构信息生成实现方案，填充「十一、实现方案」章节：
 

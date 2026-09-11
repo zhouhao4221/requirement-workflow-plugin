@@ -12,7 +12,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 > 此命令**不受仓库角色限制**，readonly 仓库也可执行。
 > 不触发缓存同步（无需求文档）。
 >
-> **CLI 优先级**：GitHub 用 `gh`；Gitea 按 [`_gitea_cli.md`](../shared/_gitea_cli.md) 检测 `tea`，可用即走 `tea`，否则回退本文 curl 示例。
+> **CLI 优先级**：GitHub 用 `gh`；Gitea 按 [`_gitea_cli.md`](../shared/_gitea_cli.md) 检测 `tea`，可用即走 `tea`，否则回退 curl。
 
 ## 命令格式
 
@@ -83,7 +83,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 
 ### 2. 分析代码，生成方案
 
-> 读取项目 CLAUDE.md 的「项目架构」章节，了解分层结构和目录布局。
+> Read `docs/prompt/architecture.md` 了解分层结构和目录布局；缺失则回退 CLAUDE.md 的「项目架构」章节（兼容旧项目），都没有静默继续。
 > 第 1 步意图为「重构 / 优化」时，Read `docs/prompt/refactoring.md`，存在则按其约束（行为不变、契约不变、范围聚焦）生成方案；缺失静默跳过。
 
 定位相关文件**默认委派** `code-scout` subagent（prompt 给：第 1 步识别的意图与目标、关键词/符号名、架构分层目录摘要），主会话只精读其返回的高/中相关片段后生成方案，不自己全库 grep。规则见 [`_delegate.md`](../shared/_delegate.md)。
@@ -97,24 +97,17 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 
 | 文件 | 改动类型 | 说明 |
 |------|---------|------|
-| internal/order/store/order_store.go | 修改 | 添加查询索引 |
-| internal/order/biz/order_list.go | 修改 | 增加分页缓存逻辑 |
-| internal/order/model/order_model.go | 修改 | 补充索引注解 |
+| <路径> | 新增 / 修改 / 删除 | <一句话> |
 
 修改方案：
 
-1. order_model.go
-   - Order 表 `status` + `created_at` 添加复合索引
-
-2. order_store.go
-   - ListOrders 查询增加 hint 走索引
-   - 添加 count cache（5 分钟 TTL）
-
-3. order_list.go
-   - 首页查询结果缓存（Redis，按筛选条件 key）
+1. <文件>
+   - <改哪个函数/字段，改成什么>
 
 是否按以上方案执行？（可以补充说明或调整方向）
 ```
+
+方案按文件逐条列，每条落到具体函数/字段；不写与本次改动无关的背景。
 
 **等待用户确认**。用户可以：
 - 确认方案 → 进入步骤 3
@@ -144,9 +137,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 ✅ 完成！
 
 修改文件：
-- internal/order/store/order_store.go（+25 -3）
-- internal/order/biz/order_list.go（+40 -5）
-- internal/order/model/order_model.go（+2 -0）
+- <路径>（+N -M）
 
 后续操作：
 - /req:commit       提交代码
