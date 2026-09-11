@@ -1,10 +1,10 @@
 ---
 description: 创建测试 - 为新功能编写自动化测试用例或手动测试用例文档
-argument-hint: "[REQ-XXX] [--type=UT|API|E2E|manual]"
+argument-hint: "[REQ-XXX] [--type=UT|API|E2E|manual] [--files=a.go,b.go]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 ---
 
-> **重要**：测试文件位置、运行命令、代码示例均从项目 CLAUDE.md 的「测试规范」章节读取，不内置任何项目细节。
+> **重要**：测试文件位置、运行命令、代码示例均从项目 `docs/prompt/testing.md` 读取，不内置任何项目细节。文件不存在时回退 `docs/prompt/architecture.md` 的「测试规范」章节（兼容旧项目），都缺时打印创建提示（非阻塞）。
 
 # 创建测试
 
@@ -16,6 +16,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 
 ```
 /req:test_new [REQ-XXX] [--type=ut|api|e2e|all|manual] [--dry-run]
+/req:test_new --files=<逗号分隔源文件> [--type=ut] [--dry-run]
 ```
 
 | 参数 | 说明 |
@@ -26,6 +27,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 | `--type=all` | 所有类型 |
 | `--type=manual` | 生成人工复测用例文档 |
 | `--dry-run` | 预览不实际创建 |
+| `--files=` | **无文档模式**：不选需求、不读需求文档，直接为给定源文件补测试；仅支持 `--type=ut`（API/E2E 需要需求文档的接口定义与流程）。供 `/req:do`、`/req:fix` 按 `_verify.md` 补 UT 时调用 |
 
 ---
 
@@ -33,6 +35,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 
 ### 1. 选择需求
 指定编号 → 使用；未指定 → 查找「开发中/测试中」需求，多个候选让用户选择。
+
+> `--files=` 模式跳过步骤 1、2、9：被测文件即参数给定的文件，测试类型固定 UT，不回填任何需求文档。带了 `--type` 非 ut 的值时提示并退出。
 
 ### 2. 分析需求文档
 提取功能清单、涉及文件，识别三类测试点（UT/API/E2E）及数量。
@@ -42,7 +46,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 
 ### 4. 生成 UT
 - **分析被测方法**：读取源文件，列出所有方法签名
-- **生成测试用例**：按项目测试框架规范（从 CLAUDE.md 读取），遵循 Arrange-Act-Assert 模式
+- **生成测试用例**：按项目测试框架规范（从 `testing.md` 读取），遵循 Arrange-Act-Assert 模式
 - **生成 Mock 文件**（如需要）：按项目 Mock 生成命令执行
 
 ### 5. 生成 API 测试
@@ -72,7 +76,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 
 ## 测试规范来源
 
-测试框架、断言库、Mock 工具、命名规范、文件路径均从项目 CLAUDE.md「测试规范」读取，不内置任何项目细节。
+测试框架、断言库、Mock 工具、命名规范、文件路径均从项目 `docs/prompt/testing.md` 读取（缺失回退 `architecture.md`「测试规范」章节），不内置任何项目细节。
 
 ---
 

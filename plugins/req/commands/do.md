@@ -81,6 +81,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 
 等待用户选择。用户选择继续 → 进入步骤 2。
 
+> 此时的规模只是按描述估的。步骤 2 `code-scout` 返回后**复核一次**：实际涉及文件数越过阈值（≥5 或 >15）时，重新弹出上面的切换提示，不能因为已经开始就默认继续。
+
 ### 2. 分析代码，生成方案
 
 > Read `docs/prompt/architecture.md` 了解分层结构和目录布局；缺失则回退 CLAUDE.md 的「项目架构」章节（兼容旧项目），都没有静默继续。
@@ -103,11 +105,14 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 
 1. <文件>
    - <改哪个函数/字段，改成什么>
+   - 验收：<可执行命令 | 可观察行为>
+
+行为变化：无 | <有意改变的行为>      ← 仅优化/重构/升级/规范类型
 
 是否按以上方案执行？（可以补充说明或调整方向）
 ```
 
-方案按文件逐条列，每条落到具体函数/字段；不写与本次改动无关的背景。
+方案按文件逐条列，每条落到具体函数/字段；不写与本次改动无关的背景。「验收」行与「行为变化」行的写法见 `_verify.md`（步骤 3.5 链接），前者也是步骤 3 能否委派 `impl-worker` 的依据。
 
 **等待用户确认**。用户可以：
 - 确认方案 → 进入步骤 3
@@ -116,7 +121,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 
 ### 3. 执行方案
 
-**无 `--from-issue`**：直接在当前分支上开发，不创建新分支。
+**无 `--from-issue`**：直接在当前分支上开发，不创建新分支。**例外**：当前分支等于 `branchStrategy` 的 `mainBranch` 或 `developBranch` 时，按下面同样的规则建分支（不加 `-iN` 后缀），不在主线分支上直接改。
 
 **有 `--from-issue=#N`**：在步骤 2 方案确认后、开始编码前，根据分支策略创建分支：
 1. 读取 `branchStrategy`（未配置则使用默认前缀）
@@ -129,7 +134,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 
 各 subagent 返回后主会话必须：复核 `git diff` 实际内容（不是复核 subagent 的自述，改动大时先派 `diff-digest` 压一遍）、逐条决策 `越界需求` / `存疑` 项、合并跨单元一致性问题。
 
-修改完成后，若项目 `docs/prompt/testing.md`（或架构章节）定义了测试命令且存在与改动相关的测试，派 `test-runner` subagent 回归；失败先修再进入步骤 4。无相关测试则跳过。
+### 3.5 验证
+
+修改完成后按 [`_verify.md`](../shared/_verify.md) 执行：编译/lint → 相关测试回归（派 `test-runner`）→ 覆盖判断（无测试时按步骤 1 的类型分流：小功能/修复询问补 UT，其余记「无测试覆盖」并派生手动验证清单）。测试失败最多修 2 轮，不得改断言迎合；仍失败停下交给用户，不进入步骤 4。
 
 ### 4. 完成提示
 
@@ -139,10 +146,21 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 修改文件：
 - <路径>（+N -M）
 
+验证结果：
+- 编译：✓ | ✗ | 未配置
+- lint：✓ | ✗ | 未配置
+- 测试：n/m 通过（<命令>） | 未配置
+- 无测试覆盖：<文件> | 无
+- 手动验证：
+  - [ ] <可观察行为>
+- 测试改动：<用例与原因> | 无
+
 后续操作：
 - /req:commit       提交代码
 - /req:pr           创建 PR
 ```
+
+「验证结果」段的字段含义与缺项写法见 `_verify.md`，整段不得省略。
 
 若来自 `--from-issue=#N`，在后续操作提示中追加：
 ```
