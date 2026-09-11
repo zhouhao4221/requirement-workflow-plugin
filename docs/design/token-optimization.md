@@ -182,7 +182,7 @@ Read(file_path="docs/requirements/active/REQ-001.md", offset=120, limit=50)
 
 ### 4.8 高吞吐步骤委派给 subagent
 
-**何时用**：命令中某一步会往主会话灌入大量原始输出（跑测试、大 PR diff、批量 grep），或可按独立单元拆分并行（逐文件审查）。
+**何时用**：命令中某一步会往主会话灌入大量原始输出（跑测试、大 PR diff、批量 grep），或可按独立单元拆分并行（逐单元实施）。
 
 **做法**：命令文档指示把该步骤派给插件自带的 agent（`plugins/req/agents/`），主会话只接收结构化结论；frontmatter `allowed-tools` 加 `Agent`。规则与可用 agent 见 `plugins/req/shared/_delegate.md`。
 
@@ -190,7 +190,7 @@ Read(file_path="docs/requirements/active/REQ-001.md", offset=120, limit=50)
 
 **禁忌**：小任务不委派（任务说明 + 回传本身有开销，经验阈值 > 1 万 token 才划算）；不要把需要主会话上下文的推理（方案设计、跨文件改动）拆出去——planner/executor 割裂后返工更贵。整条命令的 `model` 仍按 §4.3 只分 haiku / 省略两档。
 
-**已应用**：`/req:test` 阶段一~三回归运行（`test-runner`，haiku）· `/req:dev` §4 / `/req:fix` §1.2 / `/req:do` §2 代码定位（`code-scout`，haiku，主会话只精读返回的 file:line）· `/req:review-pr` 大 PR 逐文件审查（`file-reviewer`，sonnet，上下文隔离 + 并行 + 单价）。
+**已应用**：`/req:test` 阶段一~三回归运行（`test-runner`，haiku）· `/req:dev` §4 / `/req:fix` §1.2 / `/req:do` §2 代码定位（`code-scout`，haiku，主会话只精读返回的 file:line）· `/req:review-pr` 大 PR 需求比对用 `diff-digest` 摘要；代码质量审查改调原生 `/code-review`（自研 `file-reviewer` 已删，实测自研需主会话把 diff 抄进每个 prompt，隔离不成立）。
 
 ---
 

@@ -1,14 +1,14 @@
 ---
 description: PR 审查与合并 - AI 代码审查、提交评论、合并 PR
-argument-hint: "[review|merge|fetch-comments] [PR-ID] [--auto]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), Agent
+argument-hint: "[review|merge|fetch-comments] [PR-ID] [--level=low|medium|high] [--auto]"
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), Agent, Skill
 ---
 
 # PR 审查与合并
 
 对已创建的 PR 进行 AI 代码审查，可将审查意见提交到平台，审查通过后合并 PR。
 
-> 不受仓库角色限制，readonly 可执行。不触发缓存同步。
+> 不受仓库角色限制，readonly 可执行。
 >
 > CLI 优先级：GitHub → `gh pr`/`gh api`；Gitea → 按 [`_gitea_cli.md`](../shared/_gitea_cli.md) 检测 `tea`。tea 未覆盖的接口走 curl。
 
@@ -21,7 +21,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 | 子命令 | 说明 | 示例 |
 |--------|------|------|
 | (空) | 查看 PR 状态 | `/req:review-pr` |
-| `review` | AI 代码审查 | `/req:review-pr review` |
+| `review` | AI 代码审查（`--level=` 指定 `/code-review` 档位，省略则按 PR 复杂度自动选） | `/req:review-pr review` |
 | `fetch-comments` | 拉取 PR 评论，AI 生成修改清单并应用 | `/req:review-pr fetch-comments` |
 | `merge` | 合并 PR | `/req:review-pr merge` |
 
@@ -43,9 +43,14 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 
 ## review — AI 代码审查
 
-### 1. 获取 PR diff
+### 1. 取 diff 并判定规模
 
-按平台获取：Gitea `GET /pulls/{N}.diff`，GitHub `gh pr diff`。
+PR 元数据按平台取（GitHub `gh pr view`，Gitea `/pulls/{N}`），diff 一律走本地 git：fetch PR 分支与 `mergeTarget` 两端后 `git diff --stat <mergeTarget>...<branch>` 得到文件数与行数。
+
+| PR 规模 | 判定 | diff 进主会话的方式 |
+|---------|------|-------------------|
+| 小 PR | ≤ 10 个文件且 ≤ 800 行 | 读全量 diff |
+| 大 PR | 超过任一阈值 | 派 `diff-digest` 取摘要（无需落盘），diff 原文不进主会话 |
 
 ### 2. 读取审查依据
 
@@ -69,25 +74,37 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*, gh:*, tea:*, curl:*), 
 | 关联需求 | 文档「关联」字段引用 |
 
 > primary 读 `docs/requirements/active/`，readonly 读 `<requirementSource.path>/<requirementsDir>/active/`。未找到需求文档时跳过此步。
+>
+> 大 PR 用第 1 步 `diff-digest` 返回的文件清单与结构性改动（路由、DTO、表/字段）做比对，不拉 diff 原文。
 
-### 4. AI 逐文件审查
-
-审查维度：正确性、安全性、错误处理、命名规范、代码风格、需求匹配、测试覆盖。
-
-**执行方式按 PR 规模选择**（规则见 [`_delegate.md`](../shared/_delegate.md)）：
+### 4. 代码质量审查
 
 | PR 规模 | 方式 |
 |---------|------|
-| diff ≤ 10 个文件且 ≤ 800 行 | 主会话内联审查 |
-| 超过任一阈值 | 先派 `diff-digest` 压缩 diff，再**按源文件**并行委派 `file-reviewer`，主会话只做汇总 |
+| 小 PR | 主会话基于第 1 步读入的 diff 内联审查：正确性、安全性、错误处理、需求匹配、测试覆盖 |
+| 大 PR | 调用原生 `/code-review`（Skill 工具），主会话不看 diff 原文，只接收已验证的问题清单 |
 
-**4.1 取 diff**：派 `diff-digest` subagent（prompt 给：工作目录、平台取 diff 的命令、落盘目录 `<scratchpad>/diff/`）。主会话拿到的是改动清单和结构性改动摘要，**PR diff 原文不进主会话**。
+> 大 PR 不再自研逐文件委派：原生审查多 agent 并行 + 逐条验证去重，实测无误报且跨文件问题自己追完；而自研路径要主会话把 diff 再抄进每个 prompt，「diff 不进主会话」并不成立。它的 fork 跑在**会话模型**上，成本随会话模型走，一次 medium 约 6 分钟。
 
-**4.2 切分单元**：以**一个源文件 + 它的测试文件**为一个单元，一个单元派一个 subagent。**每个 subagent 不超过 1 个源文件**——把多个源文件塞进一个 subagent 会让它撞上轮次上限，交出半成品。20 个源文件就派 20 个，不是派 5 个。纯测试文件、纯配置/迁移文件各自独立成单元。
+**4.1 档位**：`--level=` 显式指定优先；否则按下表打分自动选，并在输出里打印 `档位：<level>（命中：<信号列表>）`，便于事后调阈值。信号全部来自第 1 步的 `git diff --numstat` 与 `diff-digest` 返回的结构性改动清单，不额外读文件内容。
 
-**4.3 派发**：每个 subagent 的 prompt 必须自包含，**diff 正文直接内联进 prompt**（从 4.1 落盘的文件里取该单元那一份），而不是只给磁盘路径——给路径会让 subagent 把轮次耗在自己找文件上。除 diff 正文外还要给：审查维度、第 2 步读到的项目规范中与该文件相关的条目、第 3 步中与该文件相关的功能点/业务规则。明确写「diff 已在 prompt 内，仅在无法定性时定点 Read/Grep，最多 3 处」。
+| 分值 | 信号 | 判定依据 |
+|------|------|---------|
+| +1 | 规模大 | 超过 30 个文件或 2000 行 |
+| +1 | 契约变更 | 结构性改动含接口签名、DTO/表字段、错误码、配置项或依赖变化 |
+| +1 | 敏感路径 | 路径含 `migration`/`schema`/`.sql`、`auth`/`permission`/`acl`/`rbac`、`pay`/`billing`、`delete`/`purge`/`drop` |
+| +1 | 缺测试 | 源码文件有改动，但测试文件改动行数不足源码改动的 10% |
+| +1 | 跨模块 | 改动落在 ≥ 3 个顶层模块目录 |
+| −1 | 轻量 | QUICK 需求或 hotfix 分支 |
+| −1 | 非代码为主 | ≥ 80% 改动行在文档、配置、lock、生成文件 |
 
-**4.4 汇总**：主会话收到各文件清单后去重、核对「待汇总核对」项（如接口改了但调用方未改）。有 subagent 报告轮次上限截断时，按 `_delegate.md` 的「超轮与失败处理」用 SendMessage 续问拿完整结论，并在报告中标注哪些文件是部分结果；超轮数量过半说明 4.2 切分仍然太粗。全部齐备后进入第 5 步。
+总分 ≤ −1 → `low`；0 或 1 → `medium`；≥ 2 → `high`。不自动选 `max`；`ultra` 不能由命令触发且单独计费，只在报告末尾提示「可手动 `/code-review ultra <PR#>`」。
+
+**4.2 目标**：GitHub 传 PR 号；Gitea 与 `other` 传 ref 范围 `<mergeTarget>...<branch>`（第 1 步已 fetch 两端，ref 范围只依赖本地 git）。调用形式 `/code-review <level> <target>`。**不加 `--comment`**：GitHub 上会出现两套评论来源，Gitea 不支持；评论统一走第 6 步。
+
+**4.3 结果映射**：Important → 阻塞；Nit → 建议；Pre-existing → 信息，并标注「非本 PR 引入」。原生结果已验证与去重，主会话不逐条复审，只核对与第 3 步「需求文档同步」是否重复。
+
+**4.4 不可用时**：`/code-review` 不在可用技能列表（旧版本或被 `skillOverrides` 锁为仅用户可调用）→ 退回小 PR 的内联方式审查，并在报告首行注明「原生审查不可用，已内联审查」。
 
 ### 5. 输出审查报告
 
