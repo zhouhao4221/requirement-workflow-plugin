@@ -1,6 +1,6 @@
 {
   "name": "req",
-  "version": "4.5.0",
+  "version": "4.5.1",
   "description": "需求全流程管理：分析→评审→开发→测试→归档；配置 .devflow、无全局缓存（readonly 直读主仓）",
   "author": {
     "name": "Haiqing"
