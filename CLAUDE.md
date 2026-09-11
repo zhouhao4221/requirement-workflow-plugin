@@ -17,15 +17,15 @@ DevFlow 是一个 **Claude Code 插件市场（marketplace）**，对外发布 5
 
 ## 插件全景
 
-| 插件 | 版本 | 职责 | 目录构成 |
-|------|------|------|---------|
-| **req** | 4.2.1 | 需求全流程：分析→评审→开发→测试→归档 + 分支/PR/issue/版本 | commands shared skills agents hooks scripts templates schemas |
-| **pm** | 0.7.0 | 项目管理助手：周报/月报/统计/风险/方案（只读消费 req 数据） | commands shared skills scripts |
-| **api** | 0.5.0 | 前端 API 对接：Swagger 解析、字段映射、TS 代码生成 | commands shared skills scripts docs tests |
-| **diag** | 0.3.0 | 生产诊断（**全程只读**）：SSH 拉日志→解析堆栈→关联代码→修复建议 | commands skills hooks scripts templates tests |
-| **uat** | 1.4.0 | UI 验收测试：AI 按流程文档逐场景执行界面操作（前身 `qa`） | commands skills templates |
+| 插件 | 职责 |
+|------|------|
+| **req** | 需求全流程：分析→评审→开发→测试→归档 + 分支/PR/issue/版本 |
+| **pm** | 项目管理助手：周报/月报/统计/风险/方案（只读消费 req 数据） |
+| **api** | 前端 API 对接：Swagger 解析、字段映射、TS 代码生成 |
+| **diag** | 生产诊断（**全程只读**）：SSH 拉日志→解析堆栈→关联代码→修复建议 |
+| **uat** | UI 验收测试：AI 按流程文档逐场景执行界面操作（前身 `qa`） |
 
-整体版本 `marketplace.json` = 2.39.1。**事实源是各 `plugin.json` + `marketplace.json`，不是 README**——README/tutorial 的版本号已过时，且只覆盖 req/pm/api，未收录 diag/uat（已知文档债务，非功能不成熟；diag 由 REQ-001、uat 由 REQ-002 完整交付）。
+**版本事实源是各 `plugin.json` + `marketplace.json`，不是 README**——README/tutorial 的版本号已过时，且只覆盖 req/pm/api，未收录 diag/uat（已知文档债务，非功能不成熟；diag 由 REQ-001、uat 由 REQ-002 完整交付）。
 
 ## 命令与技能结构
 
@@ -85,14 +85,6 @@ model: claude-haiku-4-5-20251001   # 省略则继承会话模型
 
 `skills/` 下**只有** helper skill——不与任何命令同名，由命令运行时按 `description` 自动激活，提供细化引导：
 
-| 插件 | helper skill |
-|------|-------------|
-| req | `requirement-analyzer`（new/edit）· `prd-analyzer`（prd-edit）· `dev-guide`（dev，读 architecture.md 分层引导）· `test-guide`（test*）· `quick-fix-guide`（new-quick）· `issue-guide`（issue）· `changelog-generator`（changelog）· `version-bumper`（release，按 semver 推导各插件版本）· `code-impact-analyzer`（需求变更/影响评估）· `natural-language-dispatcher`（自然语言意图→命令映射） |
-| pm | `report-generator`（各生成类命令，整合数据为面向受众的文档，禁用 emoji 便于导出） |
-| diag | `stack-analyzer`（仅 diagnose 期间，多语言堆栈解析为结构化 YAML） |
-| uat | `uat-executor`（仅 run 期间，意图驱动执行界面操作） |
-| api | `api-field-mapper`（编辑前端 `.ts/.tsx/.vue` 时被动提示字段映射） |
-
 > `natural-language-dispatcher` 是 req 的关键入口：用户用中文自然语言（非斜杠命令）表达意图时自动激活，识别意图→映射命令。`requirement-analyzer`/`prd-analyzer` 受 Memory 隔离约束：禁止 memory 影响文档结构/内容/格式。
 
 ---
@@ -114,8 +106,6 @@ model: claude-haiku-4-5-20251001   # 省略则继承会话模型
 ### 存储（无全局缓存）
 
 需求文档**唯一事实源**是 primary 仓库的 `requirementsDir`（默认 `docs/requirements/`，纳入 git）。**无全局缓存**：readonly 仓库经 `.devflow/settings.local.json` 的 `requirementSource.path` **直读**主仓需求目录，不复制、不同步。
-
-`docs/requirements/` 子目录：`active/`（进行中）· `completed/`（归档）· `modules/`（模块文档）· `specs/`（规范文档，跨仓库共享）· `templates/`（4 个模板）· `PRD.md` + `INDEX.md`。
 
 **无同步**：需求只有一份，写入即生效，无 PostToolUse 同步 Hook、无 cp。（v2.x 的 `~/.claude-requirements/` 全局缓存 + `sync-cache.sh` 已于 v3 移除——breaking change，旧项目需跑 `/req:migrate` + readonly 重新 `/req:use` 绑定。）
 
@@ -162,34 +152,13 @@ model: claude-haiku-4-5-20251001   # 省略则继承会话模型
 
 ## 项目架构适配
 
-插件不内置项目架构细节，从下游项目的 `docs/prompt/` 和 `.claude/skills/` 读取。
-
-| 位置 | 内容 | 加载方式 |
-|------|------|---------|
-| `CLAUDE.md` | AI 行为指令（通用规则、引用指针） | 每次会话自动加载 |
-| `docs/prompt/architecture.md` | 项目架构知识（分层、规范、技术栈） | `/req:dev`、`/req:test` 显式 Read |
-| `docs/prompt/release.md` | 项目发版规则 | `/req:release` 步骤 0 Read |
-| `docs/prompt/` Prompt 库（`code-generation`/`refactoring`/`test-generation`/`testing`/`error-diagnosis`/`pr-review`/`requirement-structuring`） | 各方面项目特有规范，统一 5 节骨架 | 对应命令按需 Read（`/req:dev`/`do`/`test*`/`fix`/`review-pr`/`new`·`edit`），缺失降级，非阻塞 |
-| `docs/requirements/specs/` | 公共知识层（枚举、规则、契约摘要） | 命令按仓库角色注入 |
-| `.devflow/settings.json(.local)` | 结构化配置 | 命令读取字段（local 覆盖同名） |
-| `.claude/skills/<concern>.md` | 窄知识具体约定（如路径变量） | 命令扫描全量注入 |
-
-- `/req:init` 扫描项目结构生成 `docs/prompt/architecture.md`；CLAUDE.md 只留引用指针，不内嵌架构内容。Prompt 库其余 7 文件从 `templates/prompt-snippets/` 复制空骨架（仅当不存在），供下游按项目填充；骨架格式见 `prompt-craft.md`。
-- 项目级 skill 文件名反映关注点（`migration.md` ✅，`config.md` ❌）；`docs/prompt/` 文件按需 Read，缺失时打印创建提示（非阻塞）。
-- 现有示例：`.claude/skills/migration.md` 声明 `MIGRATIONS_DIR`，供 `/req:dev` 写入、`/req:release` 扫描合并。Changelog 目录固定 `docs/changelogs/`，不参与配置。
-- **Prompt 结构验证**：`plugins/req/schemas/prompt-schema.md` 定义各命令期望的 prompt 文件结构；`/req:update` 拉新版本后对照检查，缺必需章节报错、缺推荐章节警告。
+插件不内置项目架构细节，从下游项目的 `docs/prompt/`、`.claude/skills/`、`docs/requirements/specs/` 与 `.devflow/settings.json(.local)` 读取；各文件的加载时机、`/req:init` 生成规则与 prompt 结构校验见 `plugins/req/CLAUDE.md`。
 
 ---
 
 ## 其他插件要点
 
-**pm** — req 数据的**只读消费者**，从 PRD/需求文档/Git 记录生成内容。无 req 数据时仍可用（仅 Git 指标）。命令：`/pm` · `weekly` · `monthly` · `milestone` · `stats` · `progress` · `plan` · `risk` · `standup` · `ask` · `brief` · `export` · `help`（13 条）。输出到 `docs/reports/`。
-
-**api** — 前端 API 对接。配置 `.api-config.json`（项目根，入 git）；Swagger **不缓存**，每次实时解析（`scripts/swagger-parser.py`，无第三方依赖）。产物：TS 类型→`{typeDir}`、请求函数→`{outputDir}`；gen 做字段 diff + 引用文件影响分析后才写入。命令：`/api`（入口）· `import` · `search` · `map` · `gen` · `config` · `help`（7 条）。
-
-**diag** — 生产诊断，**全程只读**，与 [claude-safe-ops](https://github.com/zhouhao4221/claude-safe-ops) 互补。边界：SSH 只读命令 ✅ · DB SELECT ✅ · 远端 `/tmp/claude-diag-*` append ⚠️ · 写操作/Edit/Write ❌。**6 个风控 Hook 全 deny**：敏感输入拦截 · Hook 完整性自检（防风控链被禁用）· SSH 主机白名单 · 命令动词白名单 · 写操作+本地提权阻断 · JSONL 审计（30 天）。**改动 hooks/ 须同步 hooks.json 注册，否则被 validate-hooks 拦截。** 命令：`/diag`（入口）· `init` · `diagnose` · `audit`（4 条）。存储 `~/.claude-diag/`。依赖：`python3` · `jq` · `yq`/`pyyaml` · `ssh`。
-
-**uat** — UI 验收测试。存储：`docs/uat/flows/`（流程文档，入 git）· `docs/uat/reports/` + `screenshots/`（`.gitignore`）。`/uat:run` 激活 `uat-executor`，意图驱动、不依赖预写选择器（testid 为可选加速）。结果四态 PASS/⚠️PASS/FAIL/SKIP。命令：`/uat`（入口）· `init`（首次必跑，装 skill 到项目）· `new` · `run` · `report` · `bug`（FAIL→issue，6 条）。
+各插件专属约束在 `plugins/<p>/CLAUDE.md`（pm · api · diag · uat），进入该目录工作时自动加载。
 
 ---
 
