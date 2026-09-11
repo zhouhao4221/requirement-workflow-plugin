@@ -82,7 +82,7 @@ else:
 
 ### 4. 生成 PR 标题和 Body
 
-> 分支相对 `base` 的改动**超过 10 个文件或 800 行**时，先派 `diff-digest` subagent（prompt 给：工作目录、命令 `git diff <base>...HEAD`、无需落盘），Body 的「主要改动」按它返回的摘要写，diff 原文不进主会话。规则见 [`_delegate.md`](../shared/_delegate.md)。
+> 先 `git diff --stat <base>...HEAD` 记下文件数与行数（成功输出要用）。改动**超过 10 个文件或 800 行**时，先派 `diff-digest` subagent（prompt 给：工作目录、命令 `git diff <base>...HEAD`、无需落盘），Body 的「主要改动」按它返回的摘要写，diff 原文不进主会话。规则见 [`_delegate.md`](../shared/_delegate.md)。
 
 **标题**（`--title` 覆盖）：
 - REQ-XXX → `feat(REQ-XXX): <标题>`
@@ -123,7 +123,8 @@ else:
 ✅ PR 已创建
    <url>
 已请求审核：@user1, @user2     ← reviewers 非空时输出
-/req:review-pr review / merge，或 /req:done 归档
+改动 <N> 文件 <M> 行 → 建议 /req:review-pr review（<小 PR：主会话内联审查 | 大 PR：将调用原生 /code-review，档位自动选>）
+合并后 /req:review-pr merge，或 /req:done 归档
 ```
 
 #### github
