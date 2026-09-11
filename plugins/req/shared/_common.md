@@ -1,6 +1,6 @@
 # 公共逻辑参考 - 索引
 
-> v3 起按主题拆为 7 个专题文档。本文档仅为索引，命令应直接链接到具体主题文件以减少 Read 体积（详见 [`docs/design/token-optimization.md`](../../../docs/design/token-optimization.md)）。
+> v3 起按主题拆为多个专题文档。本文档仅为索引，命令应直接链接到具体主题文件以减少 Read 体积（详见 [`docs/design/token-optimization.md`](../../../docs/design/token-optimization.md)）。
 
 ## 主题索引
 
@@ -13,6 +13,7 @@
 | [`_granularity.md`](./_granularity.md) | 需求粒度规则 / 粒度参考 / 拆分建议 / 已有需求扩展 / 前后端拆分 / REQ vs QUICK 选择 |
 | [`_claude-md.md`](./_claude-md.md) | CLAUDE.md 架构检查（检查时机、规则、缺失提醒、片段模板） |
 | [`_delegate.md`](./_delegate.md) | 子任务委派规范（何时派 subagent、可用 agent、prompt 自包含/只回结论/并行/只读） |
+| [`_verify.md`](./_verify.md) | 执行后验证（方案验收行 / 编译→回归→覆盖判断 / 失败上限与红线 / 验证结果段） |
 
 ## 旧链接兼容
 
